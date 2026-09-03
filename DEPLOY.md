@@ -13,9 +13,12 @@ données persistante et uploads persistants.
 | `Dockerfile`             | Image de production multi-étapes (bun → build Next.js standalone → image finale) |
 | `docker-compose.yml`     | Orchestration : build, port, volumes persistants, healthcheck, redémarrage auto |
 | `docker-entrypoint.sh`   | Premier démarrage : initialise la base SQLite puis lance le serveur |
-| `scripts/healthcheck.js` | Sonde de santé utilisée par Docker/Coolify (HTTP `GET /`) |
 | `.dockerignore`          | Limite le contexte de build aux fichiers utiles |
 | `.env.example`           | Modèle de variables d'environnement pour le développement local |
+
+> ℹ️ Le **healthcheck** (sonde HTTP `GET /`) est **intégré directement dans le Dockerfile** —
+> aucun fichier externe requis. Tout est auto-contenu à la racine, car les sous-dossiers ne
+> sont pas toujours inclus dans le contexte de build selon l'outil (Coolify, CI…).
 
 **Volumes persistants** (les données survivent aux redéploiements) :
 
@@ -116,3 +119,10 @@ puis `docker compose up -d --build`.
 | Erreur « base introuvable » | Vérifier que le volume `/app/data` existe et contient `custom.db` |
 | Logo uploadé disparu | Le volume `/app/public/uploads` doit être persistant (Persistent Storage Coolify) |
 | Changer le domaine | Coolify → application → Domain ; aucun réglage applicatif nécessaire |
+
+### ⚠️ Warnings `SecretsUsedInArgOrEnv` (ARG NEXTAUTH_SECRET / ENCRYPTION_KEY) pendant le build Coolify
+
+Ce sont de **simples avertissements, sans aucun impact** : Coolify injecte automatiquement les
+variables d'environnement de votre application (onglet *Environment*) en `ARG` de build.
+L'application Zalfoot ne les utilise pas (sessions Bearer personnelles + mots de passe hachés
+scrypt). Pour nettoyer les logs, supprimez ces variables inutilisées dans Coolify.

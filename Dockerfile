@@ -48,8 +48,9 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/public ./public
 # Base SQLite modèle (données actuelles du site) -> copiée dans le volume au 1er démarrage
 COPY --from=builder /app/db ./db
-# Script de démarrage (initialisation BD + lancement serveur) et healthcheck
-COPY docker-entrypoint.sh scripts/healthcheck.js ./
+# Script de démarrage (initialisation BD + lancement serveur) — fichiers racine uniquement,
+# les sous-dossiers ne sont pas toujours inclus dans le contexte de build (Coolify…)
+COPY docker-entrypoint.sh ./
 
 RUN chmod +x docker-entrypoint.sh && mkdir -p /app/data /app/public/uploads
 
@@ -58,7 +59,8 @@ EXPOSE 3000
 # Volumes persistants (détectés automatiquement par Coolify)
 VOLUME ["/app/data", "/app/public/uploads"]
 
+# Healthcheck intégré (aucun fichier externe requis) — sonde HTTP GET /
 HEALTHCHECK --interval=30s --timeout=10s --start-period=25s --retries=3 \
-  CMD ["bun", "healthcheck.js"]
+  CMD ["bun", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
