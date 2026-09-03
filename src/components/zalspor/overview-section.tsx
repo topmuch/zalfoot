@@ -141,7 +141,7 @@ export function OverviewSection({
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Graphique */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 min-w-0">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <TrendingUp className="size-5 text-primary" />
@@ -203,7 +203,7 @@ export function OverviewSection({
         </Card>
 
         {/* Prochaines réservations */}
-        <Card>
+        <Card className="min-w-0">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <Clock className="size-5 text-primary" />
