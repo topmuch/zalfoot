@@ -118,7 +118,17 @@ puis `docker compose up -d --build`.
 | Conteneur `unhealthy` | `docker logs zalfoot` — vérifier que le port 3000 est bien exposé |
 | Erreur « base introuvable » | Vérifier que le volume `/app/data` existe et contient `custom.db` |
 | Logo uploadé disparu | Le volume `/app/public/uploads` doit être persistant (Persistent Storage Coolify) |
-| Changer le domaine | Coolify → application → Domain ; aucun réglage applicatif nécessaire |
+| Changer le domaine | Coolify → application → Domain ; puis définir `SITE_URL=https://votre-domaine.tld` dans l'onglet *Environment* (SEO : canonical, OpenGraph, JSON-LD, sitemap) |
+
+### 🔍 SEO — variables d'environnement (onglet *Environment* de Coolify)
+
+| Variable                    | Rôle |
+| --------------------------- | ---- |
+| `SITE_URL`                  | URL publique canonique (`https://votre-domaine.tld`) — utilisée par OpenGraph, JSON-LD, `sitemap.xml` et `robots.txt`. Lue **au runtime** (aucun rebuild nécessaire) |
+| `GOOGLE_SITE_VERIFICATION`  | (Optionnel) Code de vérification **Google Search Console** → génère la balise `<meta name="google-site-verification">` |
+
+> ℽ Les textes SEO (titre, description, mots-clés) restent modifiables à chaud dans le
+> dashboard → onglet **Paramètres**. Icônes/favicon : `bun scripts/generate-icons.ts`.
 
 ### ⚠️ Warnings `SecretsUsedInArgOrEnv` (ARG NEXTAUTH_SECRET / ENCRYPTION_KEY) pendant le build Coolify
 
