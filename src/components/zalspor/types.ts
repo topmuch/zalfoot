@@ -71,9 +71,26 @@ export type Stats = {
   upcoming: Reservation[]
 }
 
-/** Réglages publics (paiement Wave…) */
+/** Réglages publics (identité du site + paiement Wave) */
 export type PublicSettings = {
+  siteName: string
+  siteLogo: string | null
   wavePaymentLink: string | null
+}
+
+/** Réglages complets (onglet Paramètres du dashboard). */
+export type FullSettings = PublicSettings & {
+  seoTitle: string | null
+  seoDescription: string | null
+  seoKeywords: string | null
+  notificationEmail: string
+  emailNotificationsEnabled: boolean
+  smtpHost: string
+  smtpPort: string
+  smtpUser: string
+  smtpPassword: string
+  smtpSecure: boolean
+  smtpFrom: string
 }
 
 /** Réservation affichée sur le calendrier public (aucune donnée sensible). */

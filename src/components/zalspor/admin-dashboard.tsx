@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   MapPin,
+  Settings,
   ShieldCheck,
   Wallet,
 } from 'lucide-react'
@@ -25,8 +26,17 @@ import { CalendarSection } from './calendar-section'
 import { AdminsSection } from './admins-section'
 import { FacilitiesSection } from './facilities-section'
 import { PaymentSection } from './payment-section'
+import { SettingsSection } from './settings-section'
+import { ThemeToggle } from './theme-toggle'
 
-export type DashboardSection = 'overview' | 'reservations' | 'calendar' | 'facilities' | 'payment' | 'admins'
+export type DashboardSection =
+  | 'overview'
+  | 'reservations'
+  | 'calendar'
+  | 'facilities'
+  | 'payment'
+  | 'settings'
+  | 'admins'
 
 const NAV_ITEMS: { id: DashboardSection; label: string; icon: typeof LayoutDashboard; mobileLabel: string }[] = [
   { id: 'overview', label: 'Vue d’ensemble', icon: LayoutDashboard, mobileLabel: 'Vue' },
@@ -34,6 +44,7 @@ const NAV_ITEMS: { id: DashboardSection; label: string; icon: typeof LayoutDashb
   { id: 'calendar', label: 'Calendrier', icon: CalendarDays, mobileLabel: 'Agenda' },
   { id: 'facilities', label: 'Terrains', icon: MapPin, mobileLabel: 'Terrains' },
   { id: 'payment', label: 'Paiement', icon: Wallet, mobileLabel: 'Paiement' },
+  { id: 'settings', label: 'Paramètres', icon: Settings, mobileLabel: 'Réglages' },
   { id: 'admins', label: 'Administrateurs', icon: ShieldCheck, mobileLabel: 'Admins' },
 ]
 
@@ -176,7 +187,7 @@ export function AdminDashboard({
     <div className="min-h-screen flex flex-col bg-muted/30">
       {/* ===== Barre supérieure ===== */}
       <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
           <div className="flex h-24 items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Brand size={80} subtitle="Dashboard administrateur" />
@@ -192,6 +203,7 @@ export function AdminDashboard({
                   </span>
                 ) : null}
               </Badge>
+              <ThemeToggle />
               <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l">
                 <Avatar className="size-8 border">
                   <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
@@ -232,7 +244,7 @@ export function AdminDashboard({
         </div>
       </nav>
 
-      <div className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex gap-8">
+      <div className="flex-1 mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex gap-8">
         {/* ===== Sidebar (desktop) ===== */}
         <aside className="hidden lg:block w-56 shrink-0">
           <div className="sticky top-28 flex flex-col gap-1">
@@ -309,6 +321,7 @@ export function AdminDashboard({
             />
           )}
           {section === 'payment' && <PaymentSection onUnauthorized={onUnauthorized} />}
+          {section === 'settings' && <SettingsSection onUnauthorized={onUnauthorized} />}
           {section === 'admins' && (
             <AdminsSection
               admins={admins}
@@ -322,7 +335,7 @@ export function AdminDashboard({
       </div>
 
       <footer className="mt-auto border-t bg-background py-4">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 text-center text-xs text-muted-foreground">
+        <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8 text-center text-xs text-muted-foreground">
           Zalfoot Dashboard © {new Date().getFullYear()} — Terrains, réservations et comptes administrateurs
         </div>
       </footer>

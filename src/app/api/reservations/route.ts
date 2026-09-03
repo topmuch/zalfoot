@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getAuthAdmin } from '@/lib/auth'
 import { OPEN_END_MINUTES, OPEN_START_MINUTES, isSlotPast, nowInDakar, timeToMinutes } from '@/lib/time'
 import { computeDeposit } from '@/lib/pricing'
+import { sendReservationNotification } from '@/lib/email'
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
       ...(date && DATE_REGEX.test(date) ? { date } : {}),
     },
     include: { facility: true },
-    orderBy: [{ date: 'desc' }, { startTime: 'asc' }],
+    orderBy: [{ date: 'desc' }, { startTime: 'desc' }],
   })
   return Response.json(reservations)
 }
@@ -186,6 +187,10 @@ export async function POST(request: NextRequest) {
       },
       include: { facility: true },
     })
+
+    // Notification e-mail de commande (asynchrone, sans bloquer la réponse)
+    sendReservationNotification(reservation).catch(() => {})
+
     return Response.json({ reservation, now: nowInDakar() }, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue'

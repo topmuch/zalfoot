@@ -1,23 +1,39 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { getAuthAdmin, unauthorizedResponse } from '@/lib/auth'
+import { getFullSettings, getPublicSettings, SETTING_KEYS, validateSetting } from '@/lib/settings'
 
 /**
- * Réglages publics de la plateforme.
- * - GET /api/settings  (public)  → { wavePaymentLink: string | null }
- * - PUT /api/settings  (admin)   → enregistre le lien de paiement Wave Business
+ * Réglages de la plateforme (onglet « Paramètres » du dashboard).
+ * - GET  /api/settings        (public)  → identité du site { siteName, siteLogo, wavePaymentLink }
+ * - GET  /api/settings?full=1 (admin)   → réglages complets (SEO, e-mail, SMTP…)
+ * - PUT  /api/settings        (admin)   → mise à jour partielle { clé: valeur }
  *
- * Le lien Wave peut contenir les balises optionnelles {amount} (montant FCFA)
- * et {reference} (référence de la réservation), remplacées automatiquement
- * lors de la redirection du client.
+ * Le lien Wave peut contenir les balises {amount} (acompte FCFA) et {reference},
+ * remplacées lors de la redirection du client.
  */
 
-export const WAVE_LINK_KEY = 'wave_payment_link'
-const LINK_MAX_LENGTH = 500
+export { SETTING_KEYS }
 
-export async function GET() {
-  const setting = await db.setting.findUnique({ where: { key: WAVE_LINK_KEY } })
-  return Response.json({ wavePaymentLink: setting?.value ?? null })
+const ALLOWED_KEYS = new Set<string>(Object.values(SETTING_KEYS))
+
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url)
+  const wantsFull = url.searchParams.get('full') === '1'
+
+  if (wantsFull) {
+    const auth = await getAuthAdmin(request)
+    if (!auth) return unauthorizedResponse()
+    return Response.json(await getFullSettings())
+  }
+
+  // Sous-ensemble public : identité du site + lien Wave (rien de sensible)
+  const public_ = await getPublicSettings()
+  return Response.json({
+    siteName: public_.siteName,
+    siteLogo: public_.siteLogo,
+    wavePaymentLink: public_.wavePaymentLink,
+  })
 }
 
 export async function PUT(request: NextRequest) {
@@ -31,28 +47,30 @@ export async function PUT(request: NextRequest) {
     return Response.json({ error: 'Requête invalide (JSON attendu).' }, { status: 400 })
   }
 
-  const raw = body.wavePaymentLink
-  if (raw !== undefined && raw !== null && typeof raw !== 'string') {
-    return Response.json({ error: 'Lien Wave invalide.' }, { status: 400 })
+  // Ne garder que les clés connues et de type string
+  const entries: [string, string][] = []
+  for (const [key, value] of Object.entries(body)) {
+    if (!ALLOWED_KEYS.has(key)) continue
+    if (typeof value !== 'string') continue
+    entries.push([key, value.trim()])
+  }
+  if (entries.length === 0) {
+    return Response.json({ error: 'Aucun réglage valide à enregistrer.' }, { status: 400 })
   }
 
-  const link = typeof raw === 'string' ? raw.trim() : ''
-
-  if (link) {
-    if (link.length > LINK_MAX_LENGTH) {
-      return Response.json({ error: 'Le lien est trop long (500 caractères maximum).' }, { status: 400 })
-    }
-    if (!/^https?:\/\//i.test(link)) {
-      return Response.json({ error: 'Le lien doit commencer par https:// (lien Wave Business).' }, { status: 400 })
-    }
+  // Validation de chaque valeur
+  for (const [key, value] of entries) {
+    const error = validateSetting(key, value)
+    if (error) return Response.json({ error: `${error} (${key})` }, { status: 400 })
   }
 
-  const value = link || ''
-  await db.setting.upsert({
-    where: { key: WAVE_LINK_KEY },
-    update: { value },
-    create: { key: WAVE_LINK_KEY, value },
-  })
+  for (const [key, value] of entries) {
+    await db.setting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    })
+  }
 
-  return Response.json({ wavePaymentLink: value || null })
+  return Response.json(await getFullSettings())
 }

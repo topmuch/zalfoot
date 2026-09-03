@@ -51,7 +51,7 @@ export function HorairesPage({
       {/* ===== En-tête ===== */}
       <section className="relative overflow-hidden border-b">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30" />
-        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+        <div className="relative mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
           <div className="max-w-3xl">
             <Badge className="w-fit gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
               <Clock className="size-3.5" />
@@ -73,7 +73,7 @@ export function HorairesPage({
 
       {/* ===== Horaires d'ouverture ===== */}
       <section className="py-14 sm:py-16">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-extrabold tracking-tight">Horaires d&apos;ouverture</h2>
           <p className="text-muted-foreground mt-2 max-w-2xl">
             Le complexe accueille les joueurs tous les jours, de 8 h jusqu&apos;à minuit —
@@ -137,7 +137,7 @@ export function HorairesPage({
 
       {/* ===== Tarifs ===== */}
       <section className="py-14 sm:py-16 bg-muted/40 border-y">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-extrabold tracking-tight">Tarifs</h2>
           <p className="text-muted-foreground mt-2 max-w-2xl">
             Le prix affiché est le prix payé : le même tarif pour tous les terrains, en ligne comme
@@ -290,7 +290,7 @@ export function HorairesPage({
 
       {/* ===== CTA ===== */}
       <section className="py-14 sm:py-20">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
           <Card className="bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground border-0 overflow-hidden">
             <CardContent className="py-10 px-6 sm:px-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               <div>

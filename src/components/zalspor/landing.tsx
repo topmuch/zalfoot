@@ -11,10 +11,10 @@ import {
   Goal,
   GraduationCap,
   Heart,
+  LogIn,
   MapPin,
   Moon,
   Phone,
-  ShieldCheck,
   Shirt,
   Sparkles,
   Sprout,
@@ -33,6 +33,7 @@ import { ReservationPage } from './reservation-page'
 import { HorairesPage } from './horaires-page'
 import { CalendrierPage } from './calendrier-page'
 import { ContactPage } from './contact-page'
+import { ThemeToggle } from './theme-toggle'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 24 },
@@ -98,7 +99,7 @@ export function Landing({
     <div className="min-h-screen flex flex-col bg-background">
       {/* ===== Header ===== */}
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
           <div className="flex h-24 items-center justify-between">
             <button
               type="button"
@@ -123,9 +124,10 @@ export function Landing({
             </nav>
 
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <Button variant="outline" size="sm" className="hidden xl:inline-flex" onClick={onOpenAdmin}>
-                <ShieldCheck className="size-4" />
-                Espace admin
+                <LogIn className="size-4" />
+                Connexion
               </Button>
               <Button size="sm" onClick={() => openBooking()}>
                 <CalendarCheck className="size-4" />
@@ -169,7 +171,7 @@ export function Landing({
                   onOpenAdmin()
                 }}
               >
-                <ShieldCheck className="size-4" /> Espace admin
+                <LogIn className="size-4" /> Connexion
               </button>
             </nav>
           )}
@@ -188,7 +190,7 @@ export function Landing({
             {/* ===== Hero ===== */}
             <section className="relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30" />
-              <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24">
+              <div className="relative mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24">
                 <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
                   <motion.div
                     initial="hidden"
@@ -215,8 +217,8 @@ export function Landing({
                         Réserver maintenant
                       </Button>
                       <Button size="lg" variant="outline" className="h-12 text-base" onClick={onOpenAdmin}>
-                        <ShieldCheck className="size-5" />
-                        Espace admin
+                        <LogIn className="size-5" />
+                        Connexion
                       </Button>
                     </div>
 
@@ -271,7 +273,7 @@ export function Landing({
 
             {/* ===== Terrains ===== */}
             <section id="installations" className="py-14 sm:py-20 bg-muted/40 border-y">
-              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
                   <div>
                     <h2 className="text-3xl font-extrabold tracking-tight">Nos terrains de football</h2>
@@ -391,7 +393,7 @@ export function Landing({
 
             {/* ===== Fonctionnement ===== */}
             <section id="fonctionnement" className="py-14 sm:py-20">
-              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
                 <h2 className="text-3xl font-extrabold tracking-tight text-center">Comment ça marche ?</h2>
                 <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
                   Trois étapes suffisent pour jouer.
@@ -421,7 +423,7 @@ export function Landing({
 
             {/* ===== Contact / CTA ===== */}
             <section id="contact" className="pb-14 sm:pb-20">
-              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
                 <Card className="bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground border-0 overflow-hidden">
                   <CardContent className="py-10 px-6 sm:px-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                     <div>
@@ -462,7 +464,7 @@ export function Landing({
             {/* En-tête du concept */}
             <section className="relative overflow-hidden border-b">
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30" />
-              <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+              <div className="relative mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
                 <div className="max-w-3xl">
                   <Badge className="w-fit gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
                     <Target className="size-3.5" />
@@ -482,7 +484,7 @@ export function Landing({
 
             {/* Les 3 piliers */}
             <section className="py-14 sm:py-16">
-              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
                 <h2 className="text-3xl font-extrabold tracking-tight text-center">Ce qui change pour vous</h2>
                 <div className="grid gap-6 sm:grid-cols-3 mt-10">
                   {[
@@ -518,7 +520,7 @@ export function Landing({
 
             {/* Pour qui */}
             <section className="py-14 sm:py-16 bg-muted/40 border-y">
-              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
                 <h2 className="text-3xl font-extrabold tracking-tight text-center">Pour qui ?</h2>
                 <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
                   Le concept s&apos;adapte à toutes les envies de foot.
@@ -546,7 +548,7 @@ export function Landing({
 
             {/* Tarifs */}
             <section className="py-14 sm:py-16">
-              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
                 <h2 className="text-3xl font-extrabold tracking-tight text-center">Nos tarifs à l&apos;heure</h2>
                 <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
                   Le prix affiché est le prix payé. Réservation en ligne ou à l&apos;accueil, c&apos;est le même.
@@ -590,7 +592,7 @@ export function Landing({
 
             {/* CTA */}
             <section className="pb-14 sm:pb-20">
-              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
                 <Card className="bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground border-0 overflow-hidden">
                   <CardContent className="py-10 px-6 sm:px-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                     <div>
@@ -621,7 +623,7 @@ export function Landing({
             {/* En-tête */}
             <section className="relative overflow-hidden border-b">
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30" />
-              <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+              <div className="relative mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
                 <div className="max-w-3xl">
                   <Badge className="w-fit gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
                     <Sparkles className="size-3.5" />
@@ -641,7 +643,7 @@ export function Landing({
 
             {/* Histoire */}
             <section className="py-14 sm:py-16">
-              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
                 <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
                   <div className="relative rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5 aspect-[4/3] order-2 lg:order-1">
                     <Image
@@ -691,7 +693,7 @@ export function Landing({
 
             {/* Mission + valeurs */}
             <section className="py-14 sm:py-16 bg-muted/40 border-y">
-              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
                 <Card className="bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground border-0">
                   <CardContent className="py-8 px-6 sm:px-10 flex items-start gap-4">
                     <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary-foreground/15">
@@ -729,7 +731,7 @@ export function Landing({
 
             {/* Contact */}
             <section className="py-14 sm:py-16">
-              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
                 <h2 className="text-3xl font-extrabold tracking-tight text-center">Venez nous rencontrer</h2>
                 <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
                   Une question, un projet de tournoi, un créneau régulier ? Écrivez-nous ou passez
@@ -785,7 +787,7 @@ export function Landing({
 
       {/* ===== Footer (sticky) ===== */}
       <footer className="mt-auto border-t bg-muted/40">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+        <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-3">
             <Brand size={56} />
             <span>© {new Date().getFullYear()}</span>

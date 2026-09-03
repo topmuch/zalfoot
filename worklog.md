@@ -199,3 +199,33 @@ Stage Summary:
 - ✅ Page « Contact » : Zalfoot — Croisement Kaolack - Mbour, Sénégal — +221 78 278 49 49 (lien tel:) + horaires ; coordonnées propagées accueil/footer/À propos/metadata.
 - ✅ Icône Wave remplacée par l'image fournie (pingouin + wordmark) sur toute la page de paiement ; bouton vérifié → lien Wave exact amount=5000.
 - Remarque : « acompte 50000f » du message interprété comme coquille → 5 000 F conservé (cohérent avec le lien Wave amount=5000 et les demandes précédentes).
+
+---
+Task ID: 10
+Agent: main (Z.ai Code)
+Task: Refonte onglet Réservations (plus de scroll horizontal, tri date+heure récentes) · bouton mode sombre · onglet Paramètres (SEO, nom & logo, e-mails de commande) · élargissement 16:9 dashboard + accueil · « Espace admin » → « Connexion ».
+
+Work Log:
+- Élargissement 16:9 : tous les conteneurs `max-w-7xl` → `max-w-[1920px]` (landing, admin-dashboard, admin-login, horaires-page, calendrier-page, contact-page, reservation-page). Vérifié : header 1920px pleins, pas d'overflow, hero/cartes bien répartis.
+- Mode sombre : `next-themes` (ThemeProvider attribute="class", default light) ajouté dans layout.tsx ; NOUVEAU theme-toggle.tsx (icônes Sun/Moon masquées via CSS dark → zéro décalage d'hydratation) intégré dans le header de l'accueil, du dashboard et de la page connexion. Bloc .dark déjà présent dans globals.css. Vérifié desktop + VLM (accueil et dashboard sombres impeccables).
+- « Espace admin » → « Connexion » (3 emplacements : bouton header ≥ xl, bouton hero, menu burger mobile) avec icône LogIn.
+- Tri des réservations par date et heure RÉCENTES : API GET /api/reservations orderBy date DESC + startTime DESC ; section ReservationsSection : tri par défaut « Récentes » (date+heure décroissantes) + bouton de bascule « Prochaines » (aujourd'hui/futur d'abord, passés ensuite) ; libellés « Aujourd'hui »/« Demain » en vert, réservations passées estompées (opacity-55) + mention « passé », référence/source en sous-ligne compacte.
+- Refonte ReservationsSection (suppression du scroll horizontal gauche) : table compacte 6 colonnes (Client+tél, Terrain ≥ xl, Créneau, Statut, Paiement, Actions) sans colonne Référence dédiée ; vue cartes empilées < md ; plus de double scroll vertical interne (le flux suit la page) ; recherche étendue au téléphone ; menu d'actions partagé. Vérifié : scrollWidth == clientWidth à 1440px (1118=1118) et 1920px (1598=1598), 11 lignes, bodyScrollX false ; mobile 375px : 11 cartes, table masquée, zéro overflow.
+- Onglet Paramètres (NOUVEAU settings-section.tsx, NAV_ITEMS « Paramètres » icône Settings) :
+  · Carte « Nom & logo du site » : champ nom + upload logo (POST /api/settings/logo, FormData, PNG/JPG/WebP/SVG/GIF ≤ 2 Mo → public/uploads/, upsert réglage site_logo) + bouton Réinitialiser.
+  · Carte « Référencement (SEO) » : titre (70), description (320), mots-clés (400) avec compteurs + aperçu façon résultat Google ; appliqué via generateMetadata() DANS layout.tsx (lecture DB) → <title>/<meta description>/<keywords>/<icon> dynamiques (vérifié : « Zalfoot — Location de terrains… »).
+  · Carte « Notifications e-mail de commande » : switch activation + adresse de réception + bloc SMTP complet (hôte, port, SSL, utilisateur, mot de passe, expéditeur, badge Configuré/À compléter) + bouton « Envoyer un e-mail de test ».
+- lib/settings.ts (NOUVEAU) : clés Setting (site_name, site_logo, seo_*, notification_email, email_notifications_enabled, smtp_*), getPublicSettings/getFullSettings, validateSetting par champ. API /api/settings réécrite : GET public (siteName, siteLogo, wavePaymentLink) / GET ?full=1 (admin) / PUT partiel multi-clés validé (rétro-compatible avec payment-section : wavePaymentLink conservé).
+- lib/email.ts (NOUVEAU, nodemailer installé) : sendReservationNotification (HTML + texte, client/créneau/montants/acompte/référence) branchée sur POST /api/reservations (asynchrone, catch silencieux, skip si désactivé ou SMTP incomplet) ; sendTestEmail pour le bouton de test ; timeouts de connexion 8 s.
+- Brand dynamique : hook useSiteIdentity (site-settings.ts, cache module + invalidation après upload/save) → logo et alt personnalisables partout instantanément.
+- Tests API curl : PUT multi-clés OK + validation (e-mail invalide rejeté) ; upload logo 201 + fichier servi 200 ; test-email sans SMTP → message clair ; POST réservation → notification e-mail sautée silencieusement (201 intact) ; tri API vérifié (10 sept → 1 sept, heures décroissantes).
+- Tests agent-browser (desktop 1440×900 + 1920×1080 + mobile 375×812) : accueil large + toggle sombre (classe .dark ON, VLM OK) ; Connexion ×3 ; login → dashboard (nav 7 onglets) ; Réservations sans scroll + toggle Prochaines (Aujourd'hui 18:00→20:00, Demain 17:00→19:00) ; Paramètres (3 cartes, compteurs, aperçu Google) ; toast « Envoi impossible — SMTP incomplet… » capturé ; dashboard sombre VLM OK ; mobile : cartes réservations + Paramètres empilés, zéro overflow, footer OK ; page réservation intacte (créneaux passés grisés).
+- Nettoyage : réservation et logo de test supprimés, SEO remis à « Location de terrains de football à l'heure », lint 0 erreur, dev.log sans erreur runtime.
+
+Stage Summary:
+- ✅ Onglet Réservations refait : plus AUCUN scroll horizontal (desktop table compacte + mobile cartes), colonnes fusionnées, tout visible directement.
+- ✅ Réservations classées par date et heure récentes (date+heure décroissantes) + bascule « Prochaines » disponible ; « Aujourd'hui »/« Demain » mis en évidence, passés estompés.
+- ✅ Bouton mode sombre partout (accueil, connexion, dashboard) avec persistance — thème sombre complet et lisible.
+- ✅ Onglet Paramètres : nom & logo du site (upload instantané appliqué partout), SEO dynamique (title/meta/icon via generateMetadata), notifications e-mail de commande (adresse de réception + SMTP complet + e-mail de test). Envoi réel dès que l'admin renseigne son SMTP (Brevo/Gmail/OVH…).
+- ✅ Dashboard et accueil élargis en 16:9 (conteneurs 1920px, largeur pleine vérifiée à 1920×1080).
+- ✅ « Espace admin » remplacé par « Connexion » (header, hero, burger mobile).

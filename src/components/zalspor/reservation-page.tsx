@@ -300,7 +300,7 @@ export function ReservationPage({
     <div>
       {/* ===== En-tête de la page ===== */}
       <section className="relative overflow-hidden border-b bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
           <Button
             type="button"
             variant="ghost"
@@ -395,7 +395,7 @@ export function ReservationPage({
 
       {/* ===== Contenu ===== */}
       <section className="py-8 sm:py-12">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
           {facilities.length === 0 ? (
             <Card>
               <CardContent className="py-16 text-center text-muted-foreground">

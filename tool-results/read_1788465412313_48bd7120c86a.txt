@@ -1,0 +1,819 @@
+     1→'use client'
+     2→
+     3→import { useState } from 'react'
+     4→import Image from 'next/image'
+     5→import { motion } from 'framer-motion'
+     6→import {
+     7→  BadgeCheck,
+     8→  CalendarCheck,
+     9→  Clock,
+    10→  Flame,
+    11→  Goal,
+    12→  GraduationCap,
+    13→  Heart,
+    14→  MapPin,
+    15→  Moon,
+    16→  Phone,
+    17→  ShieldCheck,
+    18→  Shirt,
+    19→  Sparkles,
+    20→  Sprout,
+    21→  Target,
+    22→  Trophy,
+    23→  Users,
+    24→  Waves,
+    25→  Zap,
+    26→} from 'lucide-react'
+    27→import { Button } from '@/components/ui/button'
+    28→import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+    29→import { Badge } from '@/components/ui/badge'
+    30→import { formatPrice, type Facility } from './types'
+    31→import { Brand } from './brand'
+    32→import { ReservationPage } from './reservation-page'
+    33→import { HorairesPage } from './horaires-page'
+    34→import { CalendrierPage } from './calendrier-page'
+    35→import { ContactPage } from './contact-page'
+    36→
+    37→const fadeInUp = {
+    38→  hidden: { opacity: 0, y: 24 },
+    39→  visible: { opacity: 1, y: 0 },
+    40→}
+    41→
+    42→type PublicPage =
+    43→  | 'accueil'
+    44→  | 'horaires'
+    45→  | 'calendrier'
+    46→  | 'concept'
+    47→  | 'apropos'
+    48→  | 'contact'
+    49→  | 'reserver'
+    50→
+    51→const NAV_LINKS: { page: PublicPage; anchor?: string; label: string }[] = [
+    52→  { page: 'accueil', anchor: 'installations', label: 'Terrains' },
+    53→  { page: 'horaires', label: 'Horaires & Tarifs' },
+    54→  { page: 'calendrier', label: 'Calendrier' },
+    55→  { page: 'concept', label: 'Le Concept' },
+    56→  { page: 'apropos', label: 'À propos' },
+    57→  { page: 'contact', label: 'Contact' },
+    58→]
+    59→
+    60→/** Coordonnées du complexe (page Contact + pied de page). */
+    61→const CONTACT = {
+    62→  name: 'Zalfoot',
+    63→  address: 'Croisement Kaolack - Mbour, Sénégal',
+    64→  phone: '+221 78 278 49 49',
+    65→  phoneHref: 'tel:+221782784949',
+    66→}
+    67→
+    68→export function Landing({
+    69→  facilities,
+    70→  onOpenAdmin,
+    71→}: {
+    72→  facilities: Facility[]
+    73→  onOpenAdmin: () => void
+    74→}) {
+    75→  const [page, setPage] = useState<PublicPage>('accueil')
+    76→  const [preselected, setPreselected] = useState<string | undefined>()
+    77→  const [navOpen, setNavOpen] = useState(false)
+    78→
+    79→  /** Ouvre la PAGE de réservation (terrain présélectionné en option). */
+    80→  function openBooking(facilityId?: string) {
+    81→    setPreselected(facilityId)
+    82→    goTo('reserver')
+    83→  }
+    84→
+    85→  function goTo(target: PublicPage, anchor?: string) {
+    86→    setPage(target)
+    87→    setNavOpen(false)
+    88→    if (anchor) {
+    89→      window.setTimeout(() => {
+    90→        document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    91→      }, 120)
+    92→    } else {
+    93→      window.scrollTo({ top: 0, behavior: 'smooth' })
+    94→    }
+    95→  }
+    96→
+    97→  return (
+    98→    <div className="min-h-screen flex flex-col bg-background">
+    99→      {/* ===== Header ===== */}
+   100→      <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+   101→        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   102→          <div className="flex h-24 items-center justify-between">
+   103→            <button
+   104→              type="button"
+   105→              onClick={() => goTo('accueil')}
+   106→              className="flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+   107→              aria-label="Zalfoot, retour à l’accueil"
+   108→            >
+   109→              <Brand size={80} />
+   110→            </button>
+   111→
+   112→            <nav className="hidden lg:flex items-center gap-4 text-sm font-medium text-muted-foreground">
+   113→              {NAV_LINKS.map((link) => (
+   114→                <button
+   115→                  key={link.label}
+   116→                  type="button"
+   117→                  className="hover:text-foreground transition-colors cursor-pointer"
+   118→                  onClick={() => goTo(link.page, link.anchor)}
+   119→                >
+   120→                  {link.label}
+   121→                </button>
+   122→              ))}
+   123→            </nav>
+   124→
+   125→            <div className="flex items-center gap-2">
+   126→              <Button variant="outline" size="sm" className="hidden xl:inline-flex" onClick={onOpenAdmin}>
+   127→                <ShieldCheck className="size-4" />
+   128→                Espace admin
+   129→              </Button>
+   130→              <Button size="sm" onClick={() => openBooking()}>
+   131→                <CalendarCheck className="size-4" />
+   132→                Réserver
+   133→              </Button>
+   134→              <Button
+   135→                variant="ghost"
+   136→                size="icon"
+   137→                className="lg:hidden"
+   138→                aria-label="Menu"
+   139→                onClick={() => setNavOpen((v) => !v)}
+   140→              >
+   141→                {navOpen ? '✕' : '☰'}
+   142→              </Button>
+   143→            </div>
+   144→          </div>
+   145→          {navOpen && (
+   146→            <nav className="lg:hidden pb-3 flex flex-col gap-1 text-sm">
+   147→              {NAV_LINKS.map((link) => (
+   148→                <button
+   149→                  key={link.label}
+   150→                  type="button"
+   151→                  className="rounded-md px-3 py-2 text-left hover:bg-muted cursor-pointer"
+   152→                  onClick={() => goTo(link.page, link.anchor)}
+   153→                >
+   154→                  {link.label}
+   155→                </button>
+   156→              ))}
+   157→              <button
+   158→                type="button"
+   159→                className="rounded-md px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer font-semibold text-foreground"
+   160→                onClick={() => openBooking()}
+   161→              >
+   162→                <CalendarCheck className="size-4 text-primary" /> Réserver un terrain
+   163→              </button>
+   164→              <button
+   165→                type="button"
+   166→                className="rounded-md px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer"
+   167→                onClick={() => {
+   168→                  setNavOpen(false)
+   169→                  onOpenAdmin()
+   170→                }}
+   171→              >
+   172→                <ShieldCheck className="size-4" /> Espace admin
+   173→              </button>
+   174→            </nav>
+   175→          )}
+   176→        </div>
+   177→      </header>
+   178→
+   179→      <main className="flex-1">
+   180→        {page === 'accueil' && (
+   181→          <motion.div
+   182→            key="accueil"
+   183→            initial="hidden"
+   184→            animate="visible"
+   185→            variants={fadeInUp}
+   186→            transition={{ duration: 0.35 }}
+   187→          >
+   188→            {/* ===== Hero ===== */}
+   189→            <section className="relative overflow-hidden">
+   190→              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30" />
+   191→              <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24">
+   192→                <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+   193→                  <motion.div
+   194→                    initial="hidden"
+   195→                    animate="visible"
+   196→                    variants={fadeInUp}
+   197→                    transition={{ duration: 0.5 }}
+   198→                    className="flex flex-col gap-5"
+   199→                  >
+   200→                    <Badge className="w-fit gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+   201→                      <Sparkles className="size-3.5" />
+   202→                      Location de terrains de football à l&apos;heure
+   203→                    </Badge>
+   204→                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
+   205→                      Réservez votre <span className="text-primary">terrain de football</span> en quelques clics.
+   206→                    </h1>
+   207→                    <p className="text-lg text-muted-foreground max-w-xl">
+   208→                      Gazon synthétique entretenu, éclairage nocturne, vestiaires : consultez les
+   209→                      disponibilités en temps réel et bloquez votre heure de foot en moins d&apos;une
+   210→                      minute.
+   211→                    </p>
+   212→                    <div className="flex flex-col sm:flex-row gap-3">
+   213→                      <Button size="lg" className="h-12 text-base" onClick={() => openBooking()}>
+   214→                        <CalendarCheck className="size-5" />
+   215→                        Réserver maintenant
+   216→                      </Button>
+   217→                      <Button size="lg" variant="outline" className="h-12 text-base" onClick={onOpenAdmin}>
+   218→                        <ShieldCheck className="size-5" />
+   219→                        Espace admin
+   220→                      </Button>
+   221→                    </div>
+   222→
+   223→                    <dl className="grid grid-cols-3 gap-4 pt-6 mt-2 border-t">
+   224→                      {[
+   225→                        { k: String(facilities.length || 3), v: 'Terrains de football' },
+   226→                        { k: '7j/7', v: 'De 8 h à minuit' },
+   227→                        { k: '98%', v: 'Joueurs satisfaits' },
+   228→                      ].map((s) => (
+   229→                        <div key={s.v} className="flex flex-col">
+   230→                          <dt className="text-2xl sm:text-3xl font-extrabold text-primary">{s.k}</dt>
+   231→                          <dd className="text-sm text-muted-foreground">{s.v}</dd>
+   232→                        </div>
+   233→                      ))}
+   234→                    </dl>
+   235→                  </motion.div>
+   236→
+   237→                  <motion.div
+   238→                    initial={{ opacity: 0, scale: 0.96 }}
+   239→                    animate={{ opacity: 1, scale: 1 }}
+   240→                    transition={{ duration: 0.6, delay: 0.15 }}
+   241→                    className="relative"
+   242→                  >
+   243→                    <div className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 aspect-[2/1]">
+   244→                      <Image
+   245→                        src="/hero-football.png"
+   246→                        alt="Terrain de football de Zalfoot, pelouse verte balisée avec buts et projecteurs"
+   247→                        fill
+   248→                        priority
+   249→                        sizes="(max-width: 1024px) 100vw, 50vw"
+   250→                        className="object-cover"
+   251→                      />
+   252→                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+   253→                    </div>
+   254→                    <div className="absolute -bottom-5 left-5 right-5 sm:left-8 sm:right-auto">
+   255→                      <Card className="shadow-lg border-emerald-100">
+   256→                        <CardContent className="flex items-center gap-3 py-3 px-4">
+   257→                          <span className="flex size-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+   258→                            <Users className="size-5" />
+   259→                          </span>
+   260→                          <div>
+   261→                            <p className="text-sm font-semibold leading-none">+1 200 joueurs / mois</p>
+   262→                            <p className="text-xs text-muted-foreground mt-1">nous font confiance</p>
+   263→                          </div>
+   264→                        </CardContent>
+   265→                      </Card>
+   266→                    </div>
+   267→                  </motion.div>
+   268→                </div>
+   269→              </div>
+   270→            </section>
+   271→
+   272→            {/* ===== Terrains ===== */}
+   273→            <section id="installations" className="py-14 sm:py-20 bg-muted/40 border-y">
+   274→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   275→                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+   276→                  <div>
+   277→                    <h2 className="text-3xl font-extrabold tracking-tight">Nos terrains de football</h2>
+   278→                    <p className="text-muted-foreground mt-2 max-w-2xl">
+   279→                      Du gazon synthétique, tout simplement. Surface stable par tous les temps,
+   280→                      entretenu quotidiennement, propre même en saison des pluies.
+   281→                    </p>
+   282→                  </div>
+   283→                  <Badge variant="outline" className="w-fit gap-1.5">
+   284→                    <MapPin className="size-3.5" /> {CONTACT.address}
+   285→                  </Badge>
+   286→                </div>
+   287→
+   288→                {/* Bannière gazon synthétique */}
+   289→                <motion.div
+   290→                  initial="hidden"
+   291→                  whileInView="visible"
+   292→                  viewport={{ once: true, margin: '-50px' }}
+   293→                  variants={fadeInUp}
+   294→                  transition={{ duration: 0.4 }}
+   295→                  className="relative rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5 mb-6"
+   296→                >
+   297→                  <div className="relative aspect-[2/1] sm:aspect-[5/2]">
+   298→                    <Image
+   299→                      src="/gazon-synthetique.png"
+   300→                      alt="Gazon synthétique dernière génération des terrains de football Zalfoot"
+   301→                      fill
+   302→                      sizes="100vw"
+   303→                      loading="eager"
+   304→                      className="object-cover"
+   305→                    />
+   306→                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+   307→                  </div>
+   308→                  <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+   309→                    <div className="text-white max-w-xl">
+   310→                      <Badge className="gap-1.5 bg-emerald-500 hover:bg-emerald-500 text-white border-0">
+   311→                        <Sprout className="size-3.5" /> 100 % gazon synthétique
+   312→                      </Badge>
+   313→                      <p className="text-xl sm:text-2xl font-extrabold mt-3 leading-tight">
+   314→                        Le plaisir du jeu, sur une surface toujours propre et stable.
+   315→                      </p>
+   316→                      <p className="text-sm text-white/85 mt-1.5">
+   317→                        Fibres dernière génération et drainage rapide : le terrain est prêt, quelle
+   318→                        que soit la météo.
+   319→                      </p>
+   320→                    </div>
+   321→                    <div className="flex flex-wrap gap-2 shrink-0">
+   322→                      {[
+   323→                        { icon: Moon, label: 'Éclairage nocturne' },
+   324→                        { icon: Goal, label: 'Buts avec filets' },
+   325→                        { icon: Shirt, label: 'Vestiaires & douches' },
+   326→                      ].map((c) => (
+   327→                        <span
+   328→                          key={c.label}
+   329→                          className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-3 py-1.5 text-xs font-medium text-white"
+   330→                        >
+   331→                          <c.icon className="size-3.5" /> {c.label}
+   332→                        </span>
+   333→                      ))}
+   334→                    </div>
+   335→                  </div>
+   336→                </motion.div>
+   337→
+   338→                {/* Cartes terrains */}
+   339→                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+   340→                  {facilities.map((f, i) => (
+   341→                    <motion.div
+   342→                      key={f.id}
+   343→                      initial="hidden"
+   344→                      whileInView="visible"
+   345→                      viewport={{ once: true, margin: '-50px' }}
+   346→                      variants={fadeInUp}
+   347→                      transition={{ duration: 0.4, delay: (i % 3) * 0.08 }}
+   348→                    >
+   349→                      <Card className="h-full flex flex-col overflow-hidden hover:shadow-lg hover:border-primary/40 transition-all group">
+   350→                        <CardHeader className="pb-3">
+   351→                          <div className="flex items-start justify-between gap-3">
+   352→                            <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+   353→                              <Sprout className="size-6" />
+   354→                            </span>
+   355→                            <Badge variant="secondary" className="gap-1.5 shrink-0 mt-0.5">
+   356→                              <Sprout className="size-3" /> Gazon synthétique
+   357→                            </Badge>
+   358→                          </div>
+   359→                          <h3 className="text-lg font-bold leading-snug mt-3">{f.name}</h3>
+   360→                        </CardHeader>
+   361→                        <CardContent className="pb-3 flex-1">
+   362→                          <p className="text-sm text-muted-foreground line-clamp-2">{f.description}</p>
+   363→                          <div className="flex items-center gap-4 mt-4 text-sm">
+   364→                            <span className="flex items-center gap-1.5 text-foreground font-semibold">
+   365→                              <Clock className="size-4 text-primary" />
+   366→                              {formatPrice(f.pricePerHour)}/h
+   367→                            </span>
+   368→                            <span className="flex items-center gap-1.5 text-muted-foreground">
+   369→                              <Users className="size-4" />
+   370→                              {f.capacity} joueurs
+   371→                            </span>
+   372→                          </div>
+   373→                        </CardContent>
+   374→                        <CardFooter>
+   375→                          <Button
+   376→                            className="w-full"
+   377→                            variant={i % 2 === 0 ? 'default' : 'outline'}
+   378→                            onClick={() => openBooking(f.id)}
+   379→                            disabled={!f.active}
+   380→                          >
+   381→                            <CalendarCheck className="size-4" />
+   382→                            {f.active ? 'Réserver ce terrain' : 'Indisponible'}
+   383→                          </Button>
+   384→                        </CardFooter>
+   385→                      </Card>
+   386→                    </motion.div>
+   387→                  ))}
+   388→                </div>
+   389→              </div>
+   390→            </section>
+   391→
+   392→            {/* ===== Fonctionnement ===== */}
+   393→            <section id="fonctionnement" className="py-14 sm:py-20">
+   394→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   395→                <h2 className="text-3xl font-extrabold tracking-tight text-center">Comment ça marche ?</h2>
+   396→                <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
+   397→                  Trois étapes suffisent pour jouer.
+   398→                </p>
+   399→                <div className="grid gap-6 sm:grid-cols-3 mt-10">
+   400→                  {[
+   401→                    { n: '1', icon: CalendarCheck, t: 'Choisissez votre créneau', d: 'Calendrier visible : sélectionnez la date et l’heure (08:00 → minuit) parmi les créneaux libres.' },
+   402→                    { n: '2', icon: Waves, t: 'Payez l’acompte avec Wave', d: 'Bloquez votre créneau avec un acompte de 5 000 FCFA par heure via Wave — le solde se règle sur place.' },
+   403→                    { n: '3', icon: Trophy, t: 'Jouez !', d: 'Votre créneau est bloqué : présentez votre référence à l’accueil et profitez de votre heure de foot.' },
+   404→                  ].map((step) => (
+   405→                    <Card key={step.n} className="relative overflow-hidden">
+   406→                      <span className="absolute -top-3 -right-1 text-7xl font-black text-primary/5 select-none">
+   407→                        {step.n}
+   408→                      </span>
+   409→                      <CardContent className="pt-6 flex flex-col items-start gap-3">
+   410→                        <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+   411→                          <step.icon className="size-6" />
+   412→                        </span>
+   413→                        <h3 className="font-bold text-lg">{step.t}</h3>
+   414→                        <p className="text-sm text-muted-foreground">{step.d}</p>
+   415→                      </CardContent>
+   416→                    </Card>
+   417→                  ))}
+   418→                </div>
+   419→              </div>
+   420→            </section>
+   421→
+   422→            {/* ===== Contact / CTA ===== */}
+   423→            <section id="contact" className="pb-14 sm:pb-20">
+   424→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   425→                <Card className="bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground border-0 overflow-hidden">
+   426→                  <CardContent className="py-10 px-6 sm:px-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+   427→                    <div>
+   428→                      <h2 className="text-2xl sm:text-3xl font-extrabold">Prêt à jouer ce week-end ?</h2>
+   429→                      <p className="mt-2 text-primary-foreground/85 max-w-lg">
+   430→                        Réservez votre heure de foot en ligne maintenant, ou appelez-nous 7 j/7 de
+   431→                        8 h à minuit.
+   432→                      </p>
+   433→                    </div>
+   434→                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+   435→                      <Button size="lg" variant="secondary" className="h-12" onClick={() => openBooking()}>
+   436→                        <CalendarCheck className="size-5" />
+   437→                        Réserver maintenant
+   438→                      </Button>
+   439→                      <a
+   440→                        href={CONTACT.phoneHref}
+   441→                        className="inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-primary-foreground/30 bg-primary-foreground/10 px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/20 cursor-pointer"
+   442→                      >
+   443→                        <Phone className="size-4" />
+   444→                        {CONTACT.phone}
+   445→                      </a>
+   446→                    </div>
+   447→                  </CardContent>
+   448→                </Card>
+   449→              </div>
+   450→            </section>
+   451→          </motion.div>
+   452→        )}
+   453→
+   454→        {page === 'concept' && (
+   455→          <motion.div
+   456→            key="concept"
+   457→            initial="hidden"
+   458→            animate="visible"
+   459→            variants={fadeInUp}
+   460→            transition={{ duration: 0.35 }}
+   461→          >
+   462→            {/* En-tête du concept */}
+   463→            <section className="relative overflow-hidden border-b">
+   464→              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30" />
+   465→              <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+   466→                <div className="max-w-3xl">
+   467→                  <Badge className="w-fit gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+   468→                    <Target className="size-3.5" />
+   469→                    Notre concept
+   470→                  </Badge>
+   471→                  <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mt-5 leading-[1.1]">
+   472→                    Le foot à l&apos;heure, <span className="text-primary">sans complication.</span>
+   473→                  </h1>
+   474→                  <p className="text-lg text-muted-foreground mt-5 max-w-2xl">
+   475→                    Zalfoot fait une seule chose, et la fait bien : louer des terrains de football à
+   476→                    l&apos;heure. Pas d&apos;abonnement, pas de frais cachés — vous choisissez un créneau,
+   477→                    vous jouez.
+   478→                  </p>
+   479→                </div>
+   480→              </div>
+   481→            </section>
+   482→
+   483→            {/* Les 3 piliers */}
+   484→            <section className="py-14 sm:py-16">
+   485→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   486→                <h2 className="text-3xl font-extrabold tracking-tight text-center">Ce qui change pour vous</h2>
+   487→                <div className="grid gap-6 sm:grid-cols-3 mt-10">
+   488→                  {[
+   489→                    {
+   490→                      icon: CalendarCheck,
+   491→                      t: 'Réservation en 1 minute',
+   492→                      d: 'Les disponibilités sont visibles en temps réel. Vous bloquez votre heure en ligne, à toute heure du jour ou de la nuit.',
+   493→                    },
+   494→                    {
+   495→                      icon: BadgeCheck,
+   496→                      t: 'Prix transparents',
+   497→                      d: 'Un tarif clair, affiché à l’heure, identique en ligne et sur place. Vous savez exactement ce que vous payez avant de venir.',
+   498→                    },
+   499→                    {
+   500→                      icon: Trophy,
+   501→                      t: 'Terrains prêts à jouer',
+   502→                      d: 'Gazon entretenu quotidiennement, buts et filets en place, vestiaires, douches et éclairage nocturne. Vous n’apportez que le ballon.',
+   503→                    },
+   504→                  ].map((p) => (
+   505→                    <Card key={p.t} className="h-full">
+   506→                      <CardContent className="pt-6 flex flex-col items-start gap-3">
+   507→                        <span className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+   508→                          <p.icon className="size-6" />
+   509→                        </span>
+   510→                        <h3 className="font-bold text-lg">{p.t}</h3>
+   511→                        <p className="text-sm text-muted-foreground">{p.d}</p>
+   512→                      </CardContent>
+   513→                    </Card>
+   514→                  ))}
+   515→                </div>
+   516→              </div>
+   517→            </section>
+   518→
+   519→            {/* Pour qui */}
+   520→            <section className="py-14 sm:py-16 bg-muted/40 border-y">
+   521→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   522→                <h2 className="text-3xl font-extrabold tracking-tight text-center">Pour qui ?</h2>
+   523→                <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
+   524→                  Le concept s&apos;adapte à toutes les envies de foot.
+   525→                </p>
+   526→                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 mt-10">
+   527→                  {[
+   528→                    { icon: Users, t: 'Équipes amicales', d: 'Le match du week-end entre voisins ou collègues, programmé en deux clics.' },
+   529→                    { icon: Flame, t: 'Fans de five', d: 'Le petit terrain 5v5 pour l’entre-soirée, sans chercher qui garde le créneau.' },
+   530→                    { icon: Trophy, t: 'Tournois & sociétés', d: 'Des heures consécutives pour vos tournois corporatifs et compétitions amicales.' },
+   531→                    { icon: GraduationCap, t: 'Écoles & académies', d: 'Des créneaux réguliers pour les entraînements et cours d’EPS.' },
+   532→                  ].map((a) => (
+   533→                    <Card key={a.t} className="h-full">
+   534→                      <CardContent className="pt-6 flex flex-col items-start gap-3">
+   535→                        <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+   536→                          <a.icon className="size-5" />
+   537→                        </span>
+   538→                        <h3 className="font-bold">{a.t}</h3>
+   539→                        <p className="text-sm text-muted-foreground">{a.d}</p>
+   540→                      </CardContent>
+   541→                    </Card>
+   542→                  ))}
+   543→                </div>
+   544→              </div>
+   545→            </section>
+   546→
+   547→            {/* Tarifs */}
+   548→            <section className="py-14 sm:py-16">
+   549→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   550→                <h2 className="text-3xl font-extrabold tracking-tight text-center">Nos tarifs à l&apos;heure</h2>
+   551→                <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
+   552→                  Le prix affiché est le prix payé. Réservation en ligne ou à l&apos;accueil, c&apos;est le même.
+   553→                </p>
+   554→                <div className="grid gap-5 sm:grid-cols-3 mt-10 max-w-4xl mx-auto">
+   555→                  {facilities.map((f) => (
+   556→                    <Card key={f.id} className="h-full flex flex-col">
+   557→                      <CardHeader className="pb-3">
+   558→                        <h3 className="font-bold leading-snug">{f.name}</h3>
+   559→                      </CardHeader>
+   560→                      <CardContent className="pb-3 flex-1">
+   561→                        <p className="text-sm text-muted-foreground line-clamp-2">{f.description}</p>
+   562→                        <p className="text-3xl font-extrabold text-primary mt-4">
+   563→                          {formatPrice(f.pricePerHour)}
+   564→                          <span className="text-sm font-medium text-muted-foreground"> /heure</span>
+   565→                        </p>
+   566→                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+   567→                          <Users className="size-3.5" /> jusqu&apos;à {f.capacity} joueurs
+   568→                        </p>
+   569→                        <p className="text-xs mt-2 flex items-center gap-1.5 text-[#0090D2] dark:text-[#4DC3F0]">
+   570→                          <Waves className="size-3.5" /> Acompte de {formatPrice(5000)}/h à la réservation,
+   571→                          solde sur place
+   572→                        </p>
+   573→                      </CardContent>
+   574→                      <CardFooter>
+   575→                        <Button
+   576→                          className="w-full"
+   577→                          variant="outline"
+   578→                          onClick={() => openBooking(f.id)}
+   579→                          disabled={!f.active}
+   580→                        >
+   581→                          <CalendarCheck className="size-4" />
+   582→                          Réserver
+   583→                        </Button>
+   584→                      </CardFooter>
+   585→                    </Card>
+   586→                  ))}
+   587→                </div>
+   588→              </div>
+   589→            </section>
+   590→
+   591→            {/* CTA */}
+   592→            <section className="pb-14 sm:pb-20">
+   593→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   594→                <Card className="bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground border-0 overflow-hidden">
+   595→                  <CardContent className="py-10 px-6 sm:px-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+   596→                    <div>
+   597→                      <h2 className="text-2xl sm:text-3xl font-extrabold">Envie de tester le concept ?</h2>
+   598→                      <p className="mt-2 text-primary-foreground/85 max-w-lg">
+   599→                        Réservez votre première heure de foot et jugez par vous-même.
+   600→                      </p>
+   601→                    </div>
+   602→                    <Button size="lg" variant="secondary" className="h-12" onClick={() => openBooking()}>
+   603→                      <CalendarCheck className="size-5" />
+   604→                      Réserver un terrain
+   605→                    </Button>
+   606→                  </CardContent>
+   607→                </Card>
+   608→              </div>
+   609→            </section>
+   610→          </motion.div>
+   611→        )}
+   612→
+   613→        {page === 'apropos' && (
+   614→          <motion.div
+   615→            key="apropos"
+   616→            initial="hidden"
+   617→            animate="visible"
+   618→            variants={fadeInUp}
+   619→            transition={{ duration: 0.35 }}
+   620→          >
+   621→            {/* En-tête */}
+   622→            <section className="relative overflow-hidden border-b">
+   623→              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30" />
+   624→              <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+   625→                <div className="max-w-3xl">
+   626→                  <Badge className="w-fit gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+   627→                    <Sparkles className="size-3.5" />
+   628→                    À propos
+   629→                  </Badge>
+   630→                  <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mt-5 leading-[1.1]">
+   631→                    Zalfoot, <span className="text-primary">le foot d&apos;abord.</span>
+   632→                  </h1>
+   633→                  <p className="text-lg text-muted-foreground mt-5 max-w-2xl">
+   634→                    Née de la passion du ballon entre Kaolack et Mbour, Zalfoot met la location de
+   635→                    terrains de football à portée de clic, pour que l&apos;envie de jouer ne dépende
+   636→                    plus jamais d&apos;un coup de fil compliqué.
+   637→                  </p>
+   638→                </div>
+   639→              </div>
+   640→            </section>
+   641→
+   642→            {/* Histoire */}
+   643→            <section className="py-14 sm:py-16">
+   644→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   645→                <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+   646→                  <div className="relative rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5 aspect-[4/3] order-2 lg:order-1">
+   647→                    <Image
+   648→                      src="/hero-football.png"
+   649→                      alt="Terrain de football de Zalfoot au coucher du soleil"
+   650→                      fill
+   651→                      sizes="(max-width: 1024px) 100vw, 50vw"
+   652→                      className="object-cover"
+   653→                    />
+   654→                    <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+   655→                  </div>
+   656→                  <div className="order-1 lg:order-2">
+   657→                    <h2 className="text-3xl font-extrabold tracking-tight">Notre histoire</h2>
+   658→                    <div className="mt-4 flex flex-col gap-4 text-muted-foreground">
+   659→                      <p>
+   660→                        Zalfoot est partie d&apos;un constat simple : entre Kaolack et Mbour, trouver un
+   661→                        terrain de football au bon créneau relevait souvent du parcours du
+   662→                        combattant — appels, allers-retours, créneaux doubles…
+   663→                      </p>
+   664→                      <p>
+   665→                        Nous avons donc construit une plateforme qui fait une seule chose :
+   666→                        afficher les disponibilités de nos terrains en temps réel et permettre à
+   667→                        chacun de bloquer une heure en quelques clics, à n&apos;importe quelle heure.
+   668→                      </p>
+   669→                      <p>
+   670→                        Aujourd&apos;hui, des centaines d&apos;équipes, d&apos;amis et d&apos;académies
+   671→                        jouent chaque semaine sur nos pelouses — et nous entretenons chaque terrain
+   672→                        comme si notre propre match s&apos;y jouait le soir.
+   673→                      </p>
+   674→                    </div>
+   675→                    <dl className="grid grid-cols-3 gap-4 pt-6 mt-6 border-t">
+   676→                      {[
+   677→                        { k: String(facilities.length || 3), v: 'Terrains' },
+   678→                        { k: '+1 200', v: 'Joueurs / mois' },
+   679→                        { k: '7j/7', v: 'Ouverture' },
+   680→                      ].map((s) => (
+   681→                        <div key={s.v} className="flex flex-col">
+   682→                          <dt className="text-2xl sm:text-3xl font-extrabold text-primary">{s.k}</dt>
+   683→                          <dd className="text-sm text-muted-foreground">{s.v}</dd>
+   684→                        </div>
+   685→                      ))}
+   686→                    </dl>
+   687→                  </div>
+   688→                </div>
+   689→              </div>
+   690→            </section>
+   691→
+   692→            {/* Mission + valeurs */}
+   693→            <section className="py-14 sm:py-16 bg-muted/40 border-y">
+   694→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   695→                <Card className="bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground border-0">
+   696→                  <CardContent className="py-8 px-6 sm:px-10 flex items-start gap-4">
+   697→                    <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary-foreground/15">
+   698→                      <Target className="size-6" />
+   699→                    </span>
+   700→                    <div>
+   701→                      <h2 className="text-xl sm:text-2xl font-extrabold">Notre mission</h2>
+   702→                      <p className="mt-2 text-primary-foreground/85 max-w-2xl">
+   703→                        Rendre le football accessible à tous, à toute heure : des terrains toujours prêts,
+   704→                        des créneaux clairs et une réservation qui prend moins d&apos;une minute.
+   705→                      </p>
+   706→                    </div>
+   707→                  </CardContent>
+   708→                </Card>
+   709→
+   710→                <div className="grid gap-6 sm:grid-cols-3 mt-8">
+   711→                  {[
+   712→                    { icon: Zap, t: 'Simplicité', d: 'Une heure, un terrain, trois clics. Zéro paperasse, zéro attente.' },
+   713→                    { icon: BadgeCheck, t: 'Transparence', d: 'Un tarif unique à l’heure, annoncé et appliqué, sans surprise.' },
+   714→                    { icon: Heart, t: 'Passion', d: 'Nous sommes des joueurs avant d’être des loueurs : le terrain est toujours impeccable.' },
+   715→                  ].map((v) => (
+   716→                    <Card key={v.t}>
+   717→                      <CardContent className="pt-6 flex flex-col items-start gap-3">
+   718→                        <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+   719→                          <v.icon className="size-5" />
+   720→                        </span>
+   721→                        <h3 className="font-bold text-lg">{v.t}</h3>
+   722→                        <p className="text-sm text-muted-foreground">{v.d}</p>
+   723→                      </CardContent>
+   724→                    </Card>
+   725→                  ))}
+   726→                </div>
+   727→              </div>
+   728→            </section>
+   729→
+   730→            {/* Contact */}
+   731→            <section className="py-14 sm:py-16">
+   732→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   733→                <h2 className="text-3xl font-extrabold tracking-tight text-center">Venez nous rencontrer</h2>
+   734→                <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
+   735→                  Une question, un projet de tournoi, un créneau régulier ? Écrivez-nous ou passez
+   736→                  nous voir.
+   737→                </p>
+   738→                <div className="grid gap-5 sm:grid-cols-3 mt-10 max-w-4xl mx-auto">
+   739→                  {[
+   740→                    { icon: MapPin, t: 'Adresse', d: CONTACT.address },
+   741→                    { icon: Phone, t: 'Téléphone', d: CONTACT.phone },
+   742→                    { icon: Clock, t: 'Horaires', d: '7 j/7 · 08:00 → 00:00' },
+   743→                  ].map((c) => (
+   744→                    <Card key={c.t} className="text-center">
+   745→                      <CardContent className="pt-6 flex flex-col items-center gap-2">
+   746→                        <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+   747→                          <c.icon className="size-5" />
+   748→                        </span>
+   749→                        <h3 className="font-bold">{c.t}</h3>
+   750→                        <p className="text-sm text-muted-foreground">{c.d}</p>
+   751→                      </CardContent>
+   752→                    </Card>
+   753→                  ))}
+   754→                </div>
+   755→                <div className="flex justify-center mt-10">
+   756→                  <Button size="lg" className="h-12 text-base" onClick={() => openBooking()}>
+   757→                    <CalendarCheck className="size-5" />
+   758→                    Réserver un terrain
+   759→                  </Button>
+   760→                </div>
+   761→              </div>
+   762→            </section>
+   763→          </motion.div>
+   764→        )}
+   765→        {page === 'horaires' && (
+   766→          <HorairesPage
+   767→            facilities={facilities}
+   768→            onReserve={() => openBooking()}
+   769→            onOpenCalendar={() => goTo('calendrier')}
+   770→          />
+   771→        )}
+   772→
+   773→        {page === 'calendrier' && <CalendrierPage onReserve={() => openBooking()} />}
+   774→
+   775→        {page === 'contact' && <ContactPage onReserve={() => openBooking()} />}
+   776→
+   777→        {page === 'reserver' && (
+   778→          <ReservationPage
+   779→            facilities={facilities.filter((f) => f.active)}
+   780→            preselectedFacilityId={preselected}
+   781→            onBack={() => goTo('accueil')}
+   782→          />
+   783→        )}
+   784→      </main>
+   785→
+   786→      {/* ===== Footer (sticky) ===== */}
+   787→      <footer className="mt-auto border-t bg-muted/40">
+   788→        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+   789→          <div className="flex items-center gap-3">
+   790→            <Brand size={56} />
+   791→            <span>© {new Date().getFullYear()}</span>
+   792→          </div>
+   793→          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+   794→            {NAV_LINKS.map((link) => (
+   795→              <button
+   796→                key={link.label}
+   797→                type="button"
+   798→                className="hover:text-foreground transition-colors cursor-pointer"
+   799→                onClick={() => goTo(link.page, link.anchor)}
+   800→              >
+   801→                {link.label}
+   802→              </button>
+   803→            ))}
+   804→          </nav>
+   805→          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+   806→            <a
+   807→              href={CONTACT.phoneHref}
+   808→              className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+   809→            >
+   810→              <Phone className="size-3.5" /> {CONTACT.phone}
+   811→            </a>
+   812→            <p>Location de terrains de football à l&apos;heure — {CONTACT.address}</p>
+   813→          </div>
+   814→        </div>
+   815→      </footer>
+   816→    </div>
+   817→  )
+   818→}
+   819→

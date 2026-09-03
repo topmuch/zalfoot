@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import {
+  ArrowDownWideNarrow,
   Ban,
   BadgeCheck,
+  CalendarClock,
   CalendarPlus,
   CheckCircle2,
   Clock,
@@ -13,12 +15,13 @@ import {
   Phone,
   Plus,
   Search,
+  Timer,
   Trash2,
   User,
   Wallet,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -53,10 +56,8 @@ import {
   PAYMENT_METHOD_META,
   PAYMENT_STATUS_META,
   RESERVATION_STATUS_META,
-  formatDateFr,
   formatHourLabel,
   formatPrice,
-  type Admin,
   type Facility,
   type Reservation,
 } from './types'
@@ -73,22 +74,48 @@ type NewReservationForm = {
   notes: string
 }
 
-/** Minutes écoulées depuis minuit ("18:30" → 1110). */
-function timeToMinutes(time: string): number {
+type SortMode = 'recent' | 'upcoming'
+
+const SORT_OPTIONS: { value: SortMode; label: string; title: string }[] = [
+  { value: 'recent', label: 'Récentes', title: 'Classer par date et heure récentes (les plus récentes en premier)' },
+  { value: 'upcoming', label: 'Prochaines', title: 'Classer par date et heure proches (aujourd’hui et à venir en premier)' },
+]
+
+/** Date du jour au format YYYY-MM-JJ (heure locale). */
+function todayStr(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** Minutes écoulées depuis minuit ("18:30" → 1110 ; "00:00" en fin = 1440). */
+function timeToMinutes(time: string, endOfDay = false): number {
   const [h, m] = time.split(':').map(Number)
   const hours = Number.isFinite(h) ? h : 0
   const minutes = Number.isFinite(m) ? m : 0
+  if (endOfDay && hours === 0 && minutes === 0) return 24 * 60
   return hours * 60 + minutes
+}
+
+/** Minutes actuelles depuis minuit. */
+function nowMinutes(): number {
+  const d = new Date()
+  return d.getHours() * 60 + d.getMinutes()
+}
+
+/** Le créneau est-il entièrement terminé ? */
+function isReservationPast(r: Reservation): boolean {
+  const today = todayStr()
+  if (r.date < today) return true
+  if (r.date > today) return false
+  return timeToMinutes(r.endTime, true) <= nowMinutes()
 }
 
 /**
  * Créneau valide : la fin est strictement après le début.
- * « 00:00 » en fin de créneau = minuit de fin de journée (1440),
- * ce qui autorise par ex. 23:00 → 00:00.
+ * « 00:00 » en fin de créneau = minuit de fin de journée (1440).
  */
 function isValidSlot(start: string, end: string): boolean {
-  const endMinutes = end === '00:00' ? 24 * 60 : timeToMinutes(end)
-  return endMinutes > timeToMinutes(start)
+  return timeToMinutes(end, true) > timeToMinutes(start)
 }
 
 function emptyForm(facilities: Facility[]): NewReservationForm {
@@ -320,6 +347,24 @@ const STATUS_FILTERS = [
   { value: 'CANCELLED', label: 'Annulées' },
 ]
 
+/** Libellé compact de la date : « Aujourd’hui », « Demain » ou date courte. */
+function dateLabel(date: string): { text: string; isToday: boolean } {
+  const today = todayStr()
+  if (date === today) return { text: "Aujourd'hui", isToday: true }
+  const [y, m, d] = date.split('-').map(Number)
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const tStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`
+  if (date === tStr) return { text: 'Demain', isToday: false }
+  if (y && m && d) {
+    return {
+      text: new Date(y, m - 1, d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }),
+      isToday: false,
+    }
+  }
+  return { text: date, isToday: false }
+}
+
 export function ReservationsSection({
   reservations,
   facilities,
@@ -337,6 +382,7 @@ export function ReservationsSection({
   const [addOpen, setAddOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [search, setSearch] = useState('')
+  const [sortMode, setSortMode] = useState<SortMode>('recent')
   const [busyId, setBusyId] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
@@ -348,11 +394,37 @@ export function ReservationsSection({
         return (
           r.customerName.toLowerCase().includes(q) ||
           r.reference.toLowerCase().includes(q) ||
-          (r.facility?.name ?? '').toLowerCase().includes(q)
+          (r.facility?.name ?? '').toLowerCase().includes(q) ||
+          (r.customerPhone ?? '').toLowerCase().includes(q)
         )
       })
-      .sort((a, b) => (a.date === b.date ? a.startTime.localeCompare(b.startTime) : b.date.localeCompare(a.date)))
   }, [reservations, statusFilter, search])
+
+  /** Tri : « Récentes » (date+heure décroissantes) ou « Prochaines » (proches d'abord). */
+  const sorted = useMemo(() => {
+    const list = [...filtered]
+    const today = todayStr()
+    if (sortMode === 'recent') {
+      list.sort((a, b) =>
+        a.date === b.date ? b.startTime.localeCompare(a.startTime) : b.date.localeCompare(a.date),
+      )
+    } else {
+      list.sort((a, b) => {
+        const aUpcoming = a.date >= today
+        const bUpcoming = b.date >= today
+        if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1
+        if (aUpcoming) {
+          return a.date === b.date
+            ? a.startTime.localeCompare(b.startTime)
+            : a.date.localeCompare(b.date)
+        }
+        return a.date === b.date
+          ? b.startTime.localeCompare(a.startTime)
+          : b.date.localeCompare(b.date)
+      })
+    }
+    return list
+  }, [filtered, sortMode])
 
   async function updateStatus(id: string, status: string) {
     setBusyId(id)
@@ -418,12 +490,68 @@ export function ReservationsSection({
     }
   }
 
-  const counts = useMemo(() => ({
-    ALL: reservations.length,
-    PENDING: reservations.filter((r) => r.status === 'PENDING').length,
-    CONFIRMED: reservations.filter((r) => r.status === 'CONFIRMED').length,
-    CANCELLED: reservations.filter((r) => r.status === 'CANCELLED').length,
-  }), [reservations])
+  const counts = useMemo(
+    () => ({
+      ALL: reservations.length,
+      PENDING: reservations.filter((r) => r.status === 'PENDING').length,
+      CONFIRMED: reservations.filter((r) => r.status === 'CONFIRMED').length,
+      CANCELLED: reservations.filter((r) => r.status === 'CANCELLED').length,
+    }),
+    [reservations],
+  )
+
+  /** Menu d'actions commun (table + cartes). */
+  const actionsMenu = (r: Reservation) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8 shrink-0"
+          aria-label="Actions"
+          disabled={busyId === r.id}
+        >
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuLabel>
+          Réf. {r.reference.slice(0, 10).toUpperCase()}
+        </DropdownMenuLabel>
+        {r.status !== 'CONFIRMED' && (
+          <DropdownMenuItem onClick={() => updateStatus(r.id, 'CONFIRMED')}>
+            <CheckCircle2 className="size-4 text-emerald-600" />
+            Confirmer
+          </DropdownMenuItem>
+        )}
+        {r.status !== 'CANCELLED' && (
+          <DropdownMenuItem onClick={() => updateStatus(r.id, 'CANCELLED')}>
+            <Ban className="size-4 text-orange-600" />
+            Annuler
+          </DropdownMenuItem>
+        )}
+        {r.paymentStatus !== 'PAID' ? (
+          <DropdownMenuItem onClick={() => updatePayment(r.id, 'PAID')}>
+            <BadgeCheck className="size-4 text-emerald-600" />
+            Acompte reçu
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={() => updatePayment(r.id, 'UNPAID')}>
+            <Wallet className="size-4 text-muted-foreground" />
+            Acompte non reçu
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => deleteReservation(r.id)}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="size-4" />
+          Supprimer
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 
   return (
     <div className="flex flex-col gap-5">
@@ -435,17 +563,16 @@ export function ReservationsSection({
           </p>
         </div>
 
-        {/* ===== Bouton AJOUTER une réservation ===== */}
         <Button onClick={() => setAddOpen(true)} size="lg" className="shadow-sm">
           <Plus className="size-4" />
           Ajouter une réservation
         </Button>
       </div>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader className="pb-3">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               {STATUS_FILTERS.map((f) => (
                 <Button
                   key={f.value}
@@ -455,19 +582,35 @@ export function ReservationsSection({
                   className="h-8"
                 >
                   {f.label}
-                  <Badge
-                    variant="secondary"
-                    className="ml-1.5 px-1.5 py-0 text-[11px] font-semibold"
-                  >
+                  <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-[11px] font-semibold">
                     {counts[f.value as keyof typeof counts]}
                   </Badge>
                 </Button>
               ))}
+              {/* Tri par date/heure */}
+              <span className="hidden xl:inline-flex items-center gap-1 text-xs text-muted-foreground ml-2">
+                <ArrowDownWideNarrow className="size-3.5" />
+                Tri :
+              </span>
+              <div className="flex gap-1">
+                {SORT_OPTIONS.map((opt) => (
+                  <Button
+                    key={opt.value}
+                    size="sm"
+                    variant={sortMode === opt.value ? 'secondary' : 'ghost'}
+                    title={opt.title}
+                    onClick={() => setSortMode(opt.value)}
+                    className="h-8 px-2.5"
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div className="relative w-full lg:w-72">
+            <div className="relative w-full xl:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher (client, référence, terrain)…"
+                placeholder="Rechercher (client, téléphone, référence, terrain)…"
                 className="pl-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -493,132 +636,178 @@ export function ReservationsSection({
               </Button>
             </div>
           ) : (
-            <div className="max-h-[540px] overflow-y-auto zalspor-scroll border-t">
-              <Table>
-                <TableHeader className="sticky top-0 bg-card z-10">
-                  <TableRow>
-                    <TableHead className="min-w-[130px]">Référence</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead className="hidden md:table-cell">Terrain</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="hidden sm:table-cell">Créneau</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="hidden md:table-cell">Paiement</TableHead>
-                    <TableHead className="hidden lg:table-cell">Source</TableHead>
-                    <TableHead className="w-12 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((r) => {
-                    const meta = RESERVATION_STATUS_META[r.status] ?? { label: r.status, variant: 'outline' as const }
-                    const payMeta = PAYMENT_STATUS_META[r.paymentStatus] ?? {
-                      label: r.paymentStatus,
-                      variant: 'outline' as const,
-                    }
-                    return (
-                      <TableRow key={r.id} className={busyId === r.id ? 'opacity-50' : undefined}>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
-                          {r.reference.slice(0, 10).toUpperCase()}
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">{r.customerName}</div>
-                          {r.customerPhone && (
-                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <Phone className="size-3" /> {r.customerPhone}
+            <>
+              {/* ===== Vue table (desktop) — compacte, sans défilement horizontal ===== */}
+              <div className="hidden md:block overflow-x-auto zalspor-scroll">
+                <Table className="min-w-0 w-full table-auto">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Client</TableHead>
+                      <TableHead className="hidden xl:table-cell">Terrain</TableHead>
+                      <TableHead>Créneau</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Paiement</TableHead>
+                      <TableHead className="w-12 text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sorted.map((r) => {
+                      const meta = RESERVATION_STATUS_META[r.status] ?? {
+                        label: r.status,
+                        variant: 'outline' as const,
+                      }
+                      const payMeta = PAYMENT_STATUS_META[r.paymentStatus] ?? {
+                        label: r.paymentStatus,
+                        variant: 'outline' as const,
+                      }
+                      const past = isReservationPast(r)
+                      const dLabel = dateLabel(r.date)
+                      return (
+                        <TableRow
+                          key={r.id}
+                          className={busyId === r.id ? 'opacity-50' : past ? 'opacity-55' : undefined}
+                        >
+                          <TableCell className="max-w-[180px]">
+                            <div className="font-medium truncate">{r.customerName}</div>
+                            {r.customerPhone && (
+                              <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                <Phone className="size-3 shrink-0" />
+                                <span className="truncate">{r.customerPhone}</span>
+                              </div>
+                            )}
+                            <div className="text-[10px] font-mono text-muted-foreground/70 mt-0.5 xl:hidden">
+                              {r.reference.slice(0, 10).toUpperCase()}
+                              {r.source === 'ADMIN' ? ' · admin' : ''}
                             </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell text-sm">{r.facility?.name ?? '—'}</TableCell>
-                        <TableCell className="text-sm whitespace-nowrap">{formatDateFr(r.date)}</TableCell>
-                        <TableCell className="hidden sm:table-cell text-sm whitespace-nowrap">
-                          {r.startTime} – {formatHourLabel(r.endTime)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={meta.variant}>{meta.label}</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <div className="flex flex-col items-start gap-1">
+                          </TableCell>
+                          <TableCell className="hidden xl:table-cell">
+                            <div className="text-sm truncate max-w-[160px]">{r.facility?.name ?? '—'}</div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {r.source === 'ADMIN' ? 'Créée par un admin' : 'Site web'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div
+                              className={`text-sm font-semibold whitespace-nowrap ${
+                                dLabel.isToday ? 'text-primary' : ''
+                              }`}
+                            >
+                              {dLabel.text}
+                              {past && <span className="ml-1.5 text-[10px] font-normal text-muted-foreground">passé</span>}
+                            </div>
+                            <div className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1 mt-0.5">
+                              <Timer className="size-3 shrink-0" />
+                              {r.startTime} – {formatHourLabel(r.endTime)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={meta.variant} className="whitespace-nowrap">
+                              {meta.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-[190px]">
                             <div className="flex flex-wrap items-center gap-1.5">
                               {r.paymentMethod ? (
-                                <Badge variant="outline" className="px-1.5 py-0 text-[11px] font-medium">
+                                <Badge variant="outline" className="px-1.5 py-0 text-[11px] font-medium whitespace-nowrap">
                                   {PAYMENT_METHOD_META[r.paymentMethod] ?? r.paymentMethod}
                                 </Badge>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">—</span>
-                              )}
-                              <Badge variant={payMeta.variant} className="px-1.5 py-0 text-[11px]">
+                              ) : null}
+                              <Badge variant={payMeta.variant} className="px-1.5 py-0 text-[11px] whitespace-nowrap">
                                 {payMeta.label}
                               </Badge>
                             </div>
-                            {typeof r.depositAmount === 'number' && typeof r.amount === 'number' ? (
-                              <span className="text-[11px] text-muted-foreground">
-                                Acompte {formatPrice(r.depositAmount)} · Total {formatPrice(r.amount)}
-                              </span>
-                            ) : typeof r.depositAmount === 'number' ? (
-                              <span className="text-[11px] text-muted-foreground">
-                                Acompte {formatPrice(r.depositAmount)}
-                              </span>
-                            ) : typeof r.amount === 'number' ? (
-                              <span className="text-[11px] text-muted-foreground">
+                            {typeof r.amount === 'number' && (
+                              <div className="text-[11px] text-muted-foreground mt-1 whitespace-nowrap">
                                 {formatPrice(r.amount)}
-                              </span>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <Badge variant={r.source === 'ADMIN' ? 'default' : 'outline'}>
-                            {r.source === 'ADMIN' ? 'Admin' : 'Public'}
+                                {typeof r.depositAmount === 'number' && (
+                                  <span className="text-muted-foreground/80"> · ac. {formatPrice(r.depositAmount)}</span>
+                                )}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">{actionsMenu(r)}</TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* ===== Vue cartes (mobile) — empilées, zéro défilement latéral ===== */}
+              <div className="md:hidden divide-y">
+                {sorted.map((r) => {
+                  const meta = RESERVATION_STATUS_META[r.status] ?? {
+                    label: r.status,
+                    variant: 'outline' as const,
+                  }
+                  const payMeta = PAYMENT_STATUS_META[r.paymentStatus] ?? {
+                    label: r.paymentStatus,
+                    variant: 'outline' as const,
+                  }
+                  const past = isReservationPast(r)
+                  const dLabel = dateLabel(r.date)
+                  return (
+                    <div
+                      key={r.id}
+                      className={`p-4 flex flex-col gap-2 ${busyId === r.id ? 'opacity-50' : past ? 'opacity-60' : ''}`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge variant={meta.variant}>{meta.label}</Badge>
+                          <Badge variant={payMeta.variant} className="px-1.5 py-0 text-[11px]">
+                            {payMeta.label}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="size-8" aria-label="Actions">
-                                <MoreHorizontal className="size-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              {r.status !== 'CONFIRMED' && (
-                                <DropdownMenuItem onClick={() => updateStatus(r.id, 'CONFIRMED')}>
-                                  <CheckCircle2 className="size-4 text-emerald-600" />
-                                  Confirmer
-                                </DropdownMenuItem>
-                              )}
-                              {r.status !== 'CANCELLED' && (
-                                <DropdownMenuItem onClick={() => updateStatus(r.id, 'CANCELLED')}>
-                                  <Ban className="size-4 text-orange-600" />
-                                  Annuler
-                                </DropdownMenuItem>
-                              )}
-                              {r.paymentStatus !== 'PAID' ? (
-                                <DropdownMenuItem onClick={() => updatePayment(r.id, 'PAID')}>
-                                  <BadgeCheck className="size-4 text-emerald-600" />
-                                  Acompte reçu
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem onClick={() => updatePayment(r.id, 'UNPAID')}>
-                                  <Wallet className="size-4 text-muted-foreground" />
-                                  Acompte non reçu
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => deleteReservation(r.id)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="size-4" />
-                                Supprimer
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                          {r.paymentMethod && (
+                            <Badge variant="outline" className="px-1.5 py-0 text-[11px] font-medium">
+                              {PAYMENT_METHOD_META[r.paymentMethod] ?? r.paymentMethod}
+                            </Badge>
+                          )}
+                        </div>
+                        {actionsMenu(r)}
+                      </div>
+
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{r.customerName}</p>
+                          {r.customerPhone && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <Phone className="size-3 shrink-0" />
+                              <span className="truncate">{r.customerPhone}</span>
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className={`text-sm font-semibold ${dLabel.isToday ? 'text-primary' : ''}`}>
+                            {dLabel.text}
+                            {past && <span className="ml-1 text-[10px] font-normal text-muted-foreground">passé</span>}
+                          </p>
+                          <p className="text-xs text-muted-foreground whitespace-nowrap">
+                            {r.startTime} – {formatHourLabel(r.endTime)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1.5 min-w-0">
+                          <CalendarClock className="size-3.5 shrink-0" />
+                          <span className="truncate">{r.facility?.name ?? '—'}</span>
+                        </span>
+                        <span className="whitespace-nowrap">
+                          {typeof r.amount === 'number' ? formatPrice(r.amount) : '—'}
+                          {typeof r.depositAmount === 'number' && (
+                            <span className="text-muted-foreground/80"> · ac. {formatPrice(r.depositAmount)}</span>
+                          )}
+                        </span>
+                      </div>
+                      <p className="text-[10px] font-mono text-muted-foreground/70">
+                        {r.reference.slice(0, 10).toUpperCase()}
+                        {r.source === 'ADMIN' ? ' · créée par un admin' : ' · site web'}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
