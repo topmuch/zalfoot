@@ -16,6 +16,10 @@ model Admin {
   role         String        @default("ADMIN") // SUPER_ADMIN | ADMIN
   phone        String?
   active       Boolean       @default(true)
+  // Date de dernière consultation des réservations : les réservations créées
+  // après cette date déclenchent la notification "Nouvelle réservation"
+  // affichée à la connexion du dashboard (voir /api/reservations/new).
+  lastSeenReservationsAt DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   sessions     Session[]

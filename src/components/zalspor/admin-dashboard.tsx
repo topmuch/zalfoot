@@ -27,6 +27,7 @@ import { AdminsSection } from './admins-section'
 import { FacilitiesSection } from './facilities-section'
 import { PaymentSection } from './payment-section'
 import { SettingsSection } from './settings-section'
+import { NewReservationsModal } from './new-reservations-modal'
 import { ThemeToggle } from './theme-toggle'
 
 export type DashboardSection =
@@ -78,6 +79,10 @@ export function AdminDashboard({
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null)
+
+  // Réservations reçues depuis la dernière consultation : grande notification
+  // affichée dès la connexion, fermée manuellement (POST /api/reservations/seen).
+  const [newReservations, setNewReservations] = useState<Reservation[] | null>(null)
 
   // Référentiel des ids de réservations déjà connus (détection des nouveautés)
   const knownReservationIdsRef = useRef<Set<string> | null>(null)
@@ -146,7 +151,30 @@ export function AdminDashboard({
   // Chargement initial
   useEffect(() => {
     loadAll()
+
+    // Nouvelles réservations depuis la dernière visite → notification visuelle
+    let cancelled = false
+    apiFetch<Reservation[]>('/api/reservations/new', { auth: true })
+      .then((list) => {
+        if (!cancelled && list.length > 0) setNewReservations(list)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
   }, [loadAll])
+
+  /** Ferme la notification et marque les réservations comme consultées. */
+  const handleCloseNewReservations = useCallback(() => {
+    setNewReservations(null)
+    apiFetch('/api/reservations/seen', { method: 'POST', auth: true }).catch(() => {})
+  }, [])
+
+  /** Ferme la notification puis ouvre l'onglet Réservations. */
+  const handleViewNewReservations = useCallback(() => {
+    handleCloseNewReservations()
+    setSection('reservations')
+  }, [handleCloseNewReservations])
 
   // Synchronisation automatique toutes les 10 secondes (nettoyée au démontage)
   useEffect(() => {
@@ -323,6 +351,15 @@ export function AdminDashboard({
           )}
         </main>
       </div>
+
+      {/* ===== Notification « Nouvelle réservation » (à la connexion) ===== */}
+      {newReservations && newReservations.length > 0 && (
+        <NewReservationsModal
+          reservations={newReservations}
+          onClose={handleCloseNewReservations}
+          onViewReservations={handleViewNewReservations}
+        />
+      )}
 
       <footer className="mt-auto border-t bg-background py-4">
         <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8 text-center text-xs text-muted-foreground">
