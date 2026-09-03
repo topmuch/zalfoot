@@ -560,24 +560,37 @@ export function ReservationPage({
                                   : slot.state === 'CLOSED'
                                     ? 'Fermé'
                                     : null
+                            // Code couleur : LIBRE = fond blanc teinté vert +
+                            // bordure verte (disponible) ; SÉLECTIONNÉ = vert plein ;
+                            // RÉSERVÉ = rouge (impossible à confondre avec libre) ;
+                            // PASSÉ/FERMÉ = gris estompé (heure barrée pour les passés).
+                            const slotStyles = isSelected
+                              ? 'bg-primary border-primary text-primary-foreground shadow-md scale-[1.03]'
+                              : slot.state === 'FREE'
+                                ? 'bg-primary/5 border-primary/40 text-foreground hover:border-primary hover:bg-primary/15 hover:scale-[1.02] cursor-pointer'
+                                : slot.state === 'BOOKED'
+                                  ? 'bg-rose-500/10 border-rose-500/40 text-rose-600 dark:text-rose-400 cursor-not-allowed'
+                                  : slot.state === 'PAST'
+                                    ? 'bg-muted/40 border-transparent text-muted-foreground/60 cursor-not-allowed'
+                                    : 'bg-muted/70 border-transparent text-muted-foreground/60 cursor-not-allowed'
                             return (
                               <button
                                 key={slot.start}
                                 type="button"
                                 disabled={slot.state !== 'FREE'}
                                 onClick={() => toggleSlot(idx)}
-                                className={`h-16 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all ${
-                                  isSelected
-                                    ? 'bg-primary border-primary text-primary-foreground shadow-md scale-[1.03]'
-                                    : slot.state === 'FREE'
-                                      ? 'hover:border-primary hover:bg-primary/5 cursor-pointer'
-                                      : 'bg-muted/70 border-transparent text-muted-foreground/60 cursor-not-allowed grayscale'
-                                }`}
+                                className={`h-16 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all ${slotStyles}`}
                                 aria-pressed={isSelected}
                                 aria-label={`Créneau ${slot.start} – ${slot.end}${stateLabel ? ` (${stateLabel})` : ' (libre)'}`}
                               >
-                                <span className="text-sm font-bold tabular-nums">{slot.start}</span>
-                                <span className={`text-[10px] leading-none ${isSelected ? 'text-primary-foreground/80' : ''}`}>
+                                <span
+                                  className={`text-sm font-bold tabular-nums ${
+                                    slot.state === 'PAST' && !isSelected ? 'line-through decoration-1' : ''
+                                  }`}
+                                >
+                                  {slot.start}
+                                </span>
+                                <span className="text-[10px] leading-none font-medium">
                                   {stateLabel ?? `${slot.end}`}
                                 </span>
                               </button>
@@ -596,8 +609,12 @@ export function ReservationPage({
                             Libre
                           </span>
                           <span className="flex items-center gap-1.5">
-                            <span className="size-2.5 rounded-sm bg-muted grayscale border border-border" aria-hidden />
-                            Réservé / passé (non réservable)
+                            <span className="size-2.5 rounded-sm border border-rose-500/40 bg-rose-500/15" aria-hidden />
+                            Réservé
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <span className="size-2.5 rounded-sm bg-muted border border-border" aria-hidden />
+                            Passé / fermé
                           </span>
                           <span className="flex items-center gap-1.5">
                             <span className="size-2.5 rounded-sm bg-amber-500" aria-hidden />
