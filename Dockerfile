@@ -1,66 +1,34 @@
-# syntax=docker/dockerfile:1
+# Zalfoot - Dockerfile for Coolify
+FROM node:20-alpine
 
-# ============================================================
-#  Zalfoot — Location de terrains de football à l'heure
-#  Image de production : Next.js 16 (sortie standalone) + Prisma + SQLite
-#  Compatible Docker / Docker Compose / Coolify
-#
-#  Construction :   docker build -t zalfoot .
-#  Démarrage :      docker compose up -d
-#  Données persistantes :
-#    /app/data              -> base SQLite (custom.db)
-#    /app/public/uploads    -> logos uploadés depuis le dashboard
-# ============================================================
+# Install required packages
+RUN apk add --no-cache git libc6-compat sqlite
+RUN npm install -g bun
 
-# ---------- Étape 1 : installation des dépendances ----------
-FROM oven/bun:1 AS deps
 WORKDIR /app
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
 
-# ---------- Étape 2 : construction de l'application ----------
-FROM oven/bun:1 AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+# Clone the repository
+RUN git clone https://github.com/topmuch/zalfoot.git .
 
+# Install dependencies
+RUN bun install
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Build the application
 ENV NEXT_TELEMETRY_DISABLED=1
-# BD utilisée uniquement pendant le build (métadonnées SEO lues en base)
-ENV DATABASE_URL=file:/app/db/custom.db
-
-# Client Prisma généré puis build Next.js (sortie standalone + static + public)
-RUN bunx prisma generate
+ENV DATABASE_URL=file:/app/data/custom.db
 RUN bun run build
 
-# ---------- Étape 3 : image finale (runtime) ----------
-FROM oven/bun:1 AS runner
-WORKDIR /app
-
-ENV NODE_ENV=production \
-    DATABASE_URL=file:/app/data/custom.db \
-    NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000 \
-    HOSTNAME=0.0.0.0
-
-# Serveur Next.js standalone (server.js + node_modules tracés + .next + public)
-COPY --from=builder /app/.next/standalone ./
-# Copies de sécurité (statiques + fichiers publics : logos, images du site)
-COPY --from=builder /app/public ./public
-# Base SQLite modèle (données actuelles du site) -> copiée dans le volume au 1er démarrage
-COPY --from=builder /app/db ./db
-# Script de démarrage (initialisation BD + lancement serveur) — fichiers racine uniquement,
-# les sous-dossiers ne sont pas toujours inclus dans le contexte de build (Coolify…)
-COPY docker-entrypoint.sh ./
-
-RUN chmod +x docker-entrypoint.sh && mkdir -p /app/data /app/public/uploads
+# Create data directory
+RUN mkdir -p /app/data
 
 EXPOSE 3000
 
-# Volumes persistants (détectés automatiquement par Coolify)
-VOLUME ["/app/data", "/app/public/uploads"]
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+ENV DATABASE_URL=file:/app/data/custom.db
 
-# Healthcheck intégré (aucun fichier externe requis) — sonde HTTP GET /
-HEALTHCHECK --interval=30s --timeout=10s --start-period=25s --retries=3 \
-  CMD ["bun", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-
-ENTRYPOINT ["./docker-entrypoint.sh"]
+# Start command - init database (admins/terrains inclus) and start server
+CMD sh -c "mkdir -p /app/data && export DATABASE_URL=file:/app/data/custom.db && if [ ! -f /app/data/custom.db ]; then cp /app/db/custom.db /app/data/custom.db 2>/dev/null || true; fi && npx prisma db push --skip-generate 2>/dev/null || true && exec node .next/standalone/server.js"
