@@ -375,7 +375,7 @@ export function ReservationsSection({
     }
   }
 
-  /** Marque une réservation comme payée / impayée (Wave ou sur place). */
+  /** Marque l'acompte d'une réservation comme reçu / non reçu (Wave ou sur place). */
   async function updatePayment(id: string, paymentStatus: 'PAID' | 'UNPAID') {
     setBusyId(id)
     try {
@@ -384,8 +384,8 @@ export function ReservationsSection({
         title: 'Paiement mis à jour',
         description:
           paymentStatus === 'PAID'
-            ? 'La réservation est marquée comme payée.'
-            : 'La réservation est marquée comme impayée.',
+            ? 'L’acompte est marqué comme reçu.'
+            : 'L’acompte est marqué comme non reçu.',
       })
       onRefresh()
     } catch (error) {
@@ -550,9 +550,19 @@ export function ReservationsSection({
                                 {payMeta.label}
                               </Badge>
                             </div>
-                            {typeof r.amount === 'number' && (
-                              <span className="text-[11px] text-muted-foreground">{formatPrice(r.amount)}</span>
-                            )}
+                            {typeof r.depositAmount === 'number' && typeof r.amount === 'number' ? (
+                              <span className="text-[11px] text-muted-foreground">
+                                Acompte {formatPrice(r.depositAmount)} · Total {formatPrice(r.amount)}
+                              </span>
+                            ) : typeof r.depositAmount === 'number' ? (
+                              <span className="text-[11px] text-muted-foreground">
+                                Acompte {formatPrice(r.depositAmount)}
+                              </span>
+                            ) : typeof r.amount === 'number' ? (
+                              <span className="text-[11px] text-muted-foreground">
+                                {formatPrice(r.amount)}
+                              </span>
+                            ) : null}
                           </div>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
@@ -584,12 +594,12 @@ export function ReservationsSection({
                               {r.paymentStatus !== 'PAID' ? (
                                 <DropdownMenuItem onClick={() => updatePayment(r.id, 'PAID')}>
                                   <BadgeCheck className="size-4 text-emerald-600" />
-                                  Marquer payé
+                                  Acompte reçu
                                 </DropdownMenuItem>
                               ) : (
                                 <DropdownMenuItem onClick={() => updatePayment(r.id, 'UNPAID')}>
                                   <Wallet className="size-4 text-muted-foreground" />
-                                  Marquer impayé
+                                  Acompte non reçu
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />

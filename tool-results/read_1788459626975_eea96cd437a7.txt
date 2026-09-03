@@ -1,0 +1,682 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+     4→     4→import {
+     5→     5→  ArrowLeft,
+     6→     6→  CalendarCheck,
+     7→     7→  CheckCircle2,
+     8→     8→  ChevronLeft,
+     9→     9→  ChevronRight,
+    10→    10→  Clock,
+    11→    11→  Info,
+    12→    12→  Loader2,
+    13→    13→  Phone,
+    14→    14→  User,
+    15→    15→  Users,
+    16→    16→  Waves,
+    17→    17→} from 'lucide-react'
+    18→    18→import {
+    19→    19→  addMonths,
+    20→    20→  eachDayOfInterval,
+    21→    21→  endOfMonth,
+    22→    22→  endOfWeek,
+    23→    23→  format,
+    24→    24→  isSameDay,
+    25→    25→  isSameMonth,
+    26→    26→  startOfMonth,
+    27→    27→  startOfWeek,
+    28→    28→} from 'date-fns'
+    29→    29→import { fr } from 'date-fns/locale'
+    30→    30→import { Button } from '@/components/ui/button'
+    31→    31→import { Card, CardContent } from '@/components/ui/card'
+    32→    32→import { Input } from '@/components/ui/input'
+    33→    33→import { Label } from '@/components/ui/label'
+    34→    34→import { Skeleton } from '@/components/ui/skeleton'
+    35→    35→import {
+    36→    36→  Dialog,
+    37→    37→  DialogContent,
+    38→    38→  DialogDescription,
+    39→    39→  DialogFooter,
+    40→    40→  DialogHeader,
+    41→    41→  DialogTitle,
+    42→    42→} from '@/components/ui/dialog'
+    43→    43→import { useToast } from '@/hooks/use-toast'
+    44→    44→import { apiFetch, ApiError } from './api'
+    45→    45→import {
+    46→    46→  buildWaveUrl,
+    47→    47→  formatDateFr,
+    48→    48→  formatHourLabel,
+    49→    49→  formatPrice,
+    50→    50→  type AvailabilitySlot,
+    51→    51→  type DayAvailability,
+    52→    52→  type Facility,
+    53→    53→  type MonthAvailability,
+    54→    54→  type PublicSettings,
+    55→    55→  type Reservation,
+    56→    56→} from './types'
+    57→    57→
+    58→    58→// ============================================================
+    59→    59→// Réservation client : calendrier visible + créneaux horaires
+    60→    60→// 08:00 → 00:00 (minuit), 1 h par créneau.
+    61→    61→// Étape 1 : terrain + date + créneaux · Étape 2 : coordonnées
+    62→    62→// + paiement Wave · Étape 3 : confirmation avec référence.
+    63→    63→// ============================================================
+    64→    64→
+    65→    65→const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+    66→    66→/** Réservation possible jusqu'à 60 jours à l'avance */
+    67→    67→const MAX_DAYS_AHEAD = 60
+    68→    68→
+    69→    69→function isoOf(d: Date): string {
+    70→    70→  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    71→    71→}
+    72→    72→
+    73→    73→function monthKey(d: Date): string {
+    74→    74→  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    75→    75→}
+    76→    76→
+    77→    77→type Selection = { start: number; end: number }
+    78→    78→
+    79→    79→type Step = 'slot' | 'details' | 'done'
+    80→    80→
+    81→    81→export function BookingDialog({
+    82→    82→  open,
+    83→    83→  onOpenChange,
+    84→    84→  facilities,
+    85→    85→  preselectedFacilityId,
+    86→    86→}: {
+    87→    87→  open: boolean
+    88→    88→  onOpenChange: (open: boolean) => void
+    89→    89→  facilities: Facility[]
+    90→    90→  preselectedFacilityId?: string
+    91→    91→}) {
+    92→    92→  const { toast } = useToast()
+    93→    93→
+    94→    94→  const [step, setStep] = useState<Step>('slot')
+    95→    95→  const [facilityId, setFacilityId] = useState('')
+    96→    96→  const [date, setDate] = useState(() => isoOf(new Date()))
+    97→    97→  const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()))
+    98→    98→  const [slots, setSlots] = useState<AvailabilitySlot[]>([])
+    99→    99→  const [slotsLoading, setSlotsLoading] = useState(false)
+   100→   100→  const [monthSummary, setMonthSummary] = useState<Record<string, number> | null>(null)
+   101→   101→  const [selection, setSelection] = useState<Selection | null>(null)
+   102→   102→  const [customerName, setCustomerName] = useState('')
+   103→   103→  const [customerPhone, setCustomerPhone] = useState('')
+   104→   104→  const [submitting, setSubmitting] = useState(false)
+   105→   105→  const [created, setCreated] = useState<Reservation | null>(null)
+   106→   106→  const [waveLink, setWaveLink] = useState<string | null>(null)
+   107→   107→
+   108→   108→  const fetchSeq = useRef(0)
+   109→   109→
+   110→   110→  const facility = useMemo(
+   111→   111→    () => facilities.find((f) => f.id === facilityId),
+   112→   112→    [facilities, facilityId],
+   113→   113→  )
+   114→   114→  const todayIso = isoOf(new Date())
+   115→   115→  const maxIso = useMemo(() => {
+   116→   116→    const d = new Date()
+   117→   117→    d.setDate(d.getDate() + MAX_DAYS_AHEAD)
+   118→   118→    return isoOf(d)
+   119→   119→  }, [])
+   120→   120→
+   121→   121→  // ===== Ouverture : terrain présélectionné + réinitialisation =====
+   122→   122→  useEffect(() => {
+   123→   123→    if (open) {
+   124→   124→      setStep('slot')
+   125→   125→      setSelection(null)
+   126→   126→      setCreated(null)
+   127→   127→      setDate(isoOf(new Date()))
+   128→   128→      setMonthCursor(startOfMonth(new Date()))
+   129→   129→      setFacilityId(preselectedFacilityId ?? facilities[0]?.id ?? '')
+   130→   130→      // Lien de paiement Wave (configuré par l'admin)
+   131→   131→      apiFetch<PublicSettings>('/api/settings')
+   132→   132→        .then((s) => setWaveLink(s.wavePaymentLink))
+   133→   133→        .catch(() => setWaveLink(null))
+   134→   134→    }
+   135→   135→  }, [open, preselectedFacilityId, facilities])
+   136→   136→
+   137→   137→  // ===== Créneaux du jour sélectionné =====
+   138→   138→  const loadSlots = useCallback(async (fid: string, day: string) => {
+   139→   139→    if (!fid || !day) return
+   140→   140→    const seq = ++fetchSeq.current
+   141→   141→    setSlotsLoading(true)
+   142→   142→    try {
+   143→   143→      const data = await apiFetch<DayAvailability>(
+   144→   144→        `/api/availability?facilityId=${encodeURIComponent(fid)}&date=${day}`,
+   145→   145→      )
+   146→   146→      if (seq === fetchSeq.current) setSlots(data.slots)
+   147→   147→    } catch {
+   148→   148→      if (seq === fetchSeq.current) setSlots([])
+   149→   149→    } finally {
+   150→   150→      if (seq === fetchSeq.current) setSlotsLoading(false)
+   151→   151→    }
+   152→   152→  }, [])
+   153→   153→
+   154→   154→  useEffect(() => {
+   155→   155→    if (open) {
+   156→   156→      setSelection(null)
+   157→   157→      loadSlots(facilityId, date)
+   158→   158→    }
+   159→   159→  }, [open, facilityId, date, loadSlots])
+   160→   160→
+   161→   161→  // ===== Résumé mensuel (calendrier : jours complets / bientôt complets) =====
+   162→   162→  useEffect(() => {
+   163→   163→    if (!open || !facilityId) return
+   164→   164→    let cancelled = false
+   165→   165→    apiFetch<MonthAvailability>(
+   166→   166→      `/api/availability?facilityId=${encodeURIComponent(facilityId)}&month=${monthKey(monthCursor)}`,
+   167→   167→    )
+   168→   168→      .then((data) => {
+   169→   169→        if (!cancelled) setMonthSummary(data.days)
+   170→   170→      })
+   171→   171→      .catch(() => {
+   172→   172→        if (!cancelled) setMonthSummary(null)
+   173→   173→      })
+   174→   174→    return () => {
+   175→   175→      cancelled = true
+   176→   176→    }
+   177→   177→  }, [open, facilityId, monthCursor])
+   178→   178→
+   179→   179→  // ===== Sélection de créneaux consécutifs =====
+   180→   180→  function toggleSlot(idx: number) {
+   181→   181→    const slot = slots[idx]
+   182→   182→    if (!slot || slot.state !== 'FREE') return
+   183→   183→    if (!selection) {
+   184→   184→      setSelection({ start: idx, end: idx })
+   185→   185→      return
+   186→   186→    }
+   187→   187→    if (idx >= selection.start && idx <= selection.end) {
+   188→   188→      if (idx === selection.start && idx === selection.end) setSelection(null)
+   189→   189→      else if (idx === selection.start) setSelection({ start: idx + 1, end: selection.end })
+   190→   190→      else if (idx === selection.end) setSelection({ start: selection.start, end: idx - 1 })
+   191→   191→      return
+   192→   192→    }
+   193→   193→    if (idx === selection.start - 1) setSelection({ start: idx, end: selection.end })
+   194→   194→    else if (idx === selection.end + 1) setSelection({ start: selection.start, end: idx })
+   195→   195→    else setSelection({ start: idx, end: idx })
+   196→   196→  }
+   197→   197→
+   198→   198→  const selectedSlots = useMemo(
+   199→   199→    () => (selection ? slots.slice(selection.start, selection.end + 1) : []),
+   200→   200→    [selection, slots],
+   201→   201→  )
+   202→   202→  const hours = selection ? selection.end - selection.start + 1 : 0
+   203→   203→  const total = facility && hours > 0 ? hours * facility.pricePerHour : 0
+   204→   204→  const canContinue = hours > 0 && !!facility
+   205→   205→
+   206→   206→  // ===== Jours du calendrier =====
+   207→   207→  const calendarDays = useMemo(() => {
+   208→   208→    const start = startOfWeek(startOfMonth(monthCursor), { weekStartsOn: 1 })
+   209→   209→    const end = endOfWeek(endOfMonth(monthCursor), { weekStartsOn: 1 })
+   210→   210→    return eachDayOfInterval({ start, end })
+   211→   211→  }, [monthCursor])
+   212→   212→
+   213→   213→  const prevMonthDisabled = isSameMonth(monthCursor, new Date())
+   214→   214→  const nextMonthDisabled = isSameMonth(monthCursor, addMonths(new Date(), 2))
+   215→   215→
+   216→   216→  // ===== Soumission =====
+   217→   217→  const canSubmit =
+   218→   218→    step === 'details' &&
+   219→   219→    !!facility &&
+   220→   220→    hours > 0 &&
+   221→   221→    customerName.trim().length > 1 &&
+   222→   222→    customerPhone.replace(/\D/g, '').length >= 8
+   223→   223→
+   224→   224→  async function handleSubmit(e: React.FormEvent) {
+   225→   225→    e.preventDefault()
+   226→   226→    if (!canSubmit || submitting || !selection || !facility) return
+   227→   227→    const startSlot = slots[selection.start]
+   228→   228→    const endSlot = slots[selection.end]
+   229→   229→    if (!startSlot || !endSlot) return
+   230→   230→    setSubmitting(true)
+   231→   231→    try {
+   232→   232→      const result = await apiFetch<{ reservation: Reservation }>('/api/reservations', {
+   233→   233→        method: 'POST',
+   234→   234→        body: {
+   235→   235→          facilityId: facility.id,
+   236→   236→          date,
+   237→   237→          startTime: startSlot.start,
+   238→   238→          endTime: endSlot.end,
+   239→   239→          customerName: customerName.trim(),
+   240→   240→          customerPhone: customerPhone.trim(),
+   241→   241→          source: 'PUBLIC',
+   242→   242→        },
+   243→   243→      })
+   244→   244→      setCreated(result.reservation)
+   245→   245→      setStep('done')
+   246→   246→      toast({
+   247→   247→        title: 'Réservation enregistrée ! 🎉',
+   248→   248→        description: `Référence ${result.reservation.reference.slice(0, 10).toUpperCase()}. Effectuez le paiement Wave pour la confirmer.`,
+   249→   249→      })
+   250→   250→    } catch (error) {
+   251→   251→      const message = error instanceof ApiError ? error.message : 'Une erreur est survenue. Réessayez.'
+   252→   252→      toast({ title: 'Échec de la réservation', description: message, variant: 'destructive' })
+   253→   253→      // Conflit ou créneau devenu indisponible → retour au choix du créneau
+   254→   254→      if (error instanceof ApiError && (error.status === 409 || error.status === 400)) {
+   255→   255→        setStep('slot')
+   256→   256→        setSelection(null)
+   257→   257→        loadSlots(facilityId, date)
+   258→   258→      }
+   259→   259→    } finally {
+   260→   260→      setSubmitting(false)
+   261→   261→    }
+   262→   262→  }
+   263→   263→
+   264→   264→  function payWithWave() {
+   265→   265→    if (!waveLink || !created) return
+   266→   266→    const url = buildWaveUrl(waveLink, { amount: created.amount ?? 0, reference: created.reference })
+   267→   267→    window.open(url, '_blank', 'noopener')
+   268→   268→  }
+   269→   269→
+   270→   270→  // ===== Rendu =====
+   271→   271→  const stepTitles: Record<Step, { title: string; desc: string }> = {
+   272→   272→    slot: {
+   273→   273→      title: 'Réserver votre créneau',
+   274→   274→      desc: 'Choisissez le terrain, la date puis votre créneau horaire (08:00 → minuit).',
+   275→   275→    },
+   276→   276→    details: {
+   277→   277→      title: 'Vos coordonnées',
+   278→   278→      desc: 'Laissez votre nom et votre numéro de téléphone, puis payez avec Wave.',
+   279→   279→    },
+   280→   280→    done: { title: 'Réservation enregistrée', desc: 'Votre créneau est bloqué, il ne reste qu’à payer.' },
+   281→   281→  }
+   282→   282→
+   283→   283→  const freeCount = slots.filter((s) => s.state === 'FREE').length
+   284→   284→  const noSlotsLeft = !slotsLoading && slots.length > 0 && freeCount === 0
+   285→   285→
+   286→   286→  return (
+   287→   287→    <Dialog open={open} onOpenChange={onOpenChange}>
+   288→   288→      <DialogContent className="sm:max-w-lg zalspor-scroll max-h-[92vh] overflow-y-auto">
+   289→   289→        <DialogHeader>
+   290→   290→          <DialogTitle className="flex items-center gap-2 text-xl">
+   291→   291→            <CalendarCheck className="size-5 text-primary" />
+   292→   292→            {stepTitles[step].title}
+   293→   293→          </DialogTitle>
+   294→   294→          <DialogDescription>{stepTitles[step].desc}</DialogDescription>
+   295→   295→        </DialogHeader>
+   296→   296→
+   297→   297→        {/* ============ ÉTAPE 1 : terrain + calendrier + créneaux ============ */}
+   298→   298→        {step === 'slot' && (
+   299→   299→          <div className="grid gap-5">
+   300→   300→            {facilities.length > 1 ? (
+   301→   301→              <div className="grid grid-cols-1 gap-2">
+   302→   302→                <Label>Terrain</Label>
+   303→   303→                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+   304→   304→                  {facilities.map((f) => (
+   305→   305→                    <button
+   306→   306→                      key={f.id}
+   307→   307→                      type="button"
+   308→   308→                      onClick={() => setFacilityId(f.id)}
+   309→   309→                      className={`rounded-xl border px-3 py-2.5 text-left transition-all cursor-pointer ${
+   310→   310→                        facilityId === f.id
+   311→   311→                          ? 'border-primary bg-primary/5 shadow-sm'
+   312→   312→                          : 'hover:border-primary/40'
+   313→   313→                      }`}
+   314→   314→                      aria-pressed={facilityId === f.id}
+   315→   315→                    >
+   316→   316→                      <p className="text-sm font-semibold leading-tight truncate">{f.name.split('—')[0].trim()}</p>
+   317→   317→                      <p className="text-xs text-muted-foreground mt-1">
+   318→   318→                        {formatPrice(f.pricePerHour)}/h · {f.capacity} joueurs
+   319→   319→                      </p>
+   320→   320→                    </button>
+   321→   321→                  ))}
+   322→   322→                </div>
+   323→   323→              </div>
+   324→   324→            ) : facilities.length === 1 ? (
+   325→   325→              <Card>
+   326→   326→                <CardContent className="flex items-center justify-between py-3 px-4">
+   327→   327→                  <span className="text-sm font-semibold">{facilities[0].name}</span>
+   328→   328→                  <span className="text-sm text-primary font-bold">{formatPrice(facilities[0].pricePerHour)}/h</span>
+   329→   329→                </CardContent>
+   330→   330→              </Card>
+   331→   331→            ) : (
+   332→   332→              <p className="text-sm text-muted-foreground">Aucun terrain disponible pour le moment.</p>
+   333→   333→            )}
+   334→   334→
+   335→   335→            {/* ----- Calendrier mensuel ----- */}
+   336→   336→            <div className="rounded-xl border bg-card">
+   337→   337→              <div className="flex items-center justify-between px-3 py-2.5 border-b">
+   338→   338→                <Button
+   339→   339→                  type="button"
+   340→   340→                  variant="ghost"
+   341→   341→                  size="icon"
+   342→   342→                  className="size-8"
+   343→   343→                  disabled={prevMonthDisabled}
+   344→   344→                  onClick={() => setMonthCursor((m) => addMonths(m, -1))}
+   345→   345→                  aria-label="Mois précédent"
+   346→   346→                >
+   347→   347→                  <ChevronLeft className="size-4" />
+   348→   348→                </Button>
+   349→   349→                <p className="text-sm font-semibold capitalize">
+   350→   350→                  {format(monthCursor, 'MMMM yyyy', { locale: fr })}
+   351→   351→                </p>
+   352→   352→                <Button
+   353→   353→                  type="button"
+   354→   354→                  variant="ghost"
+   355→   355→                  size="icon"
+   356→   356→                  className="size-8"
+   357→   357→                  disabled={nextMonthDisabled}
+   358→   358→                  onClick={() => setMonthCursor((m) => addMonths(m, 1))}
+   359→   359→                  aria-label="Mois suivant"
+   360→   360→                >
+   361→   361→                  <ChevronRight className="size-4" />
+   362→   362→                </Button>
+   363→   363→              </div>
+   364→   364→              <div className="p-3">
+   365→   365→                <div className="grid grid-cols-7 gap-1 mb-1">
+   366→   366→                  {WEEKDAYS.map((d) => (
+   367→   367→                    <p key={d} className="text-center text-[11px] font-medium text-muted-foreground py-1">
+   368→   368→                      {d}
+   369→   369→                    </p>
+   370→   370→                  ))}
+   371→   371→                </div>
+   372→   372→                <div className="grid grid-cols-7 gap-1">
+   373→   373→                  {calendarDays.map((day) => {
+   374→   374→                    const iso = isoOf(day)
+   375→   375→                    const inMonth = isSameMonth(day, monthCursor)
+   376→   376→                    const past = iso < todayIso
+   377→   377→                    const tooFar = iso > maxIso
+   378→   378→                    const full = monthSummary !== null && (monthSummary[iso] ?? -1) === 0 && !past && !tooFar
+   379→   379→                    const almostFull =
+   380→   380→                      !full && monthSummary !== null && (monthSummary[iso] ?? 16) > 0 && (monthSummary[iso] ?? 16) <= 4
+   381→   381→                    const disabled = !inMonth || past || tooFar || full
+   382→   382→                    const selected = date === iso
+   383→   383→                    const today = isSameDay(day, new Date())
+   384→   384→                    return (
+   385→   385→                      <button
+   386→   386→                        key={iso}
+   387→   387→                        type="button"
+   388→   388→                        disabled={disabled}
+   389→   389→                        onClick={() => setDate(iso)}
+   390→   390→                        className={`relative h-10 rounded-lg text-sm transition-colors ${
+   391→   391→                          selected
+   392→   392→                            ? 'bg-primary text-primary-foreground font-bold shadow-sm cursor-pointer'
+   393→   393→                            : disabled
+   394→   394→                              ? 'text-muted-foreground/40 cursor-not-allowed'
+   395→   395→                              : 'hover:bg-primary/10 cursor-pointer'
+   396→   396→                        } ${full ? 'line-through' : ''} ${today && !selected ? 'ring-1 ring-primary/50 font-semibold' : ''}`}
+   397→   397→                        aria-label={`Choisir le ${format(day, 'd MMMM', { locale: fr })}${full ? ' (complet)' : ''}`}
+   398→   398→                        aria-pressed={selected}
+   399→   399→                      >
+   400→   400→                        {format(day, 'd')}
+   401→   401→                        {almostFull && !selected ? (
+   402→   402→                          <span
+   403→   403→                            className="absolute bottom-1 left-1/2 -translate-x-1/2 size-1 rounded-full bg-amber-500"
+   404→   404→                            aria-hidden
+   405→   405→                          />
+   406→   406→                        ) : null}
+   407→   407→                      </button>
+   408→   408→                    )
+   409→   409→                  })}
+   410→   410→                </div>
+   411→   411→              </div>
+   412→   412→            </div>
+   413→   413→
+   414→   414→            {/* ----- Grille des créneaux 08:00 → minuit ----- */}
+   415→   415→            <div className="grid gap-2">
+   416→   416→              <div className="flex items-center justify-between gap-2 min-w-0">
+   417→   417→                <Label className="flex items-center gap-1.5 min-w-0">
+   418→   418→                  <Clock className="size-3.5 text-primary shrink-0" />
+   419→   419→                  <span className="truncate">Créneaux du {formatDateFr(date)}</span>
+   420→   420→                </Label>
+   421→   421→                <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
+   422→   422→                  {slotsLoading ? '…' : `${freeCount} libre${freeCount > 1 ? 's' : ''} / ${slots.length}`}
+   423→   423→                </span>
+   424→   424→              </div>
+   425→   425→
+   426→   426→              {slotsLoading ? (
+   427→   427→                <div className="grid grid-cols-4 gap-2">
+   428→   428→                  {Array.from({ length: 16 }).map((_, i) => (
+   429→   429→                    <Skeleton key={i} className="h-16 rounded-xl" />
+   430→   430→                  ))}
+   431→   431→                </div>
+   432→   432→              ) : slots.length === 0 ? (
+   433→   433→                <div className="rounded-xl border border-dashed py-8 text-center text-sm text-muted-foreground">
+   434→   434→                  Disponibilités indisponibles pour cette date.
+   435→   435→                </div>
+   436→   436→              ) : (
+   437→   437→                <>
+   438→   438→                  <div className="grid grid-cols-4 gap-2">
+   439→   439→                    {slots.map((slot, idx) => {
+   440→   440→                      const isSelected =
+   441→   441→                        selection !== null && idx >= selection.start && idx <= selection.end
+   442→   442→                      const stateLabel =
+   443→   443→                        slot.state === 'BOOKED' ? 'Réservé' : slot.state === 'PAST' ? 'Passé' : slot.state === 'CLOSED' ? 'Fermé' : null
+   444→   444→                      return (
+   445→   445→                        <button
+   446→   446→                          key={slot.start}
+   447→   447→                          type="button"
+   448→   448→                          disabled={slot.state !== 'FREE'}
+   449→   449→                          onClick={() => toggleSlot(idx)}
+   450→   450→                          className={`h-16 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all ${
+   451→   451→                            isSelected
+   452→   452→                              ? 'bg-primary border-primary text-primary-foreground shadow-md scale-[1.03]'
+   453→   453→                              : slot.state === 'FREE'
+   454→   454→                                ? 'hover:border-primary hover:bg-primary/5 cursor-pointer'
+   455→   455→                                : 'bg-muted/70 border-transparent text-muted-foreground/60 cursor-not-allowed grayscale'
+   456→   456→                          }`}
+   457→   457→                          aria-pressed={isSelected}
+   458→   458→                          aria-label={`Créneau ${slot.start} – ${slot.end}${stateLabel ? ` (${stateLabel})` : ' (libre)'}`}
+   459→   459→                        >
+   460→   460→                          <span className="text-sm font-bold tabular-nums">{slot.start}</span>
+   461→   461→                          <span className={`text-[10px] leading-none ${isSelected ? 'text-primary-foreground/80' : ''}`}>
+   462→   462→                            {stateLabel ?? `${slot.end}`}
+   463→   463→                          </span>
+   464→   464→                        </button>
+   465→   465→                      )
+   466→   466→                    })}
+   467→   467→                  </div>
+   468→   468→                  {noSlotsLeft && (
+   469→   469→                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+   470→   470→                      <Info className="size-3.5 shrink-0" />
+   471→   471→                      Plus de créneau disponible ce jour — choisissez une autre date.
+   472→   472→                    </p>
+   473→   473→                  )}
+   474→   474→                </>
+   475→   475→              )}
+   476→   476→            </div>
+   477→   477→
+   478→   478→            {/* ----- Récapitulatif + continuation ----- */}
+   479→   479→            <div className="rounded-xl bg-muted/50 border px-4 py-3 flex items-center justify-between gap-3 min-h-14">
+   480→   480→              {selection && facility ? (
+   481→   481→                <>
+   482→   482→                  <div className="min-w-0">
+   483→   483→                    <p className="text-sm font-semibold truncate">
+   484→   484→                      {slots[selection.start]?.start} → {formatHourLabel(slots[selection.end]?.end ?? '')}
+   485→   485→                      <span className="text-muted-foreground font-normal"> · {hours} h</span>
+   486→   486→                    </p>
+   487→   487→                    <p className="text-xs text-muted-foreground truncate">{facility.name}</p>
+   488→   488→                  </div>
+   489→   489→                  <p className="text-lg font-extrabold text-primary whitespace-nowrap">{formatPrice(total)}</p>
+   490→   490→                </>
+   491→   491→              ) : (
+   492→   492→                <p className="text-sm text-muted-foreground">
+   493→   493→                  Sélectionnez un créneau libre (plusieurs heures consécutives possibles).
+   494→   494→                </p>
+   495→   495→              )}
+   496→   496→            </div>
+   497→   497→          </div>
+   498→   498→        )}
+   499→   499→
+   500→   500→        {/* ============ ÉTAPE 2 : coordonnées + paiement Wave ============ */}
+   501→   501→        {step === 'details' && facility && selection && (
+   502→   502→          <form onSubmit={handleSubmit} className="grid gap-4">
+   503→   503→            {/* Récap */}
+   504→   504→            <Card className="border-primary/30 bg-primary/5">
+   505→   505→              <CardContent className="py-4 px-5 grid gap-2">
+   506→   506→                <div className="flex items-center justify-between text-sm">
+   507→   507→                  <span className="text-muted-foreground flex items-center gap-1.5">
+   508→   508→                    <CalendarCheck className="size-4" /> {formatDateFr(date)}
+   509→   509→                  </span>
+   510→   510→                  <span className="font-bold">{formatDateFr(date).split(' ')[1] ?? ''}</span>
+   511→   511→                </div>
+   512→   512→                <div className="flex items-center justify-between text-sm">
+   513→   513→                  <span className="text-muted-foreground flex items-center gap-1.5">
+   514→   514→                    <Clock className="size-4" /> Créneau
+   515→   515→                  </span>
+   516→   516→                  <span className="font-semibold tabular-nums">
+   517→   517→                    {slots[selection.start]?.start} → {formatHourLabel(slots[selection.end]?.end ?? '')} ({hours} h)
+   518→   518→                  </span>
+   519→   519→                </div>
+   520→   520→                <div className="flex items-center justify-between text-sm">
+   521→   521→                  <span className="text-muted-foreground flex items-center gap-1.5">
+   522→   522→                    <Users className="size-4" /> {facility.name}
+   523→   523→                  </span>
+   524→   524→                  <span className="text-muted-foreground">{facility.capacity} joueurs</span>
+   525→   525→                </div>
+   526→   526→                <div className="border-t pt-2 mt-1 flex items-center justify-between">
+   527→   527→                  <span className="text-sm font-semibold">Total à payer</span>
+   528→   528→                  <span className="text-xl font-extrabold text-primary">{formatPrice(total)}</span>
+   529→   529→                </div>
+   530→   530→              </CardContent>
+   531→   531→            </Card>
+   532→   532→
+   533→   533→            <div className="grid gap-2">
+   534→   534→              <Label htmlFor="bk-name">Nom complet *</Label>
+   535→   535→              <div className="relative">
+   536→   536→                <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+   537→   537→                <Input
+   538→   538→                  id="bk-name"
+   539→   539→                  className="pl-9"
+   540→   540→                  placeholder="Ex. Aïssatou Diallo"
+   541→   541→                  value={customerName}
+   542→   542→                  onChange={(e) => setCustomerName(e.target.value)}
+   543→   543→                  required
+   544→   544→                  minLength={2}
+   545→   545→                  autoComplete="name"
+   546→   546→                />
+   547→   547→              </div>
+   548→   548→            </div>
+   549→   549→
+   550→   550→            <div className="grid gap-2">
+   551→   551→              <Label htmlFor="bk-phone">Numéro de téléphone (Wave) *</Label>
+   552→   552→              <div className="relative">
+   553→   553→                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+   554→   554→                <Input
+   555→   555→                  id="bk-phone"
+   556→   556→                  className="pl-9"
+   557→   557→                  type="tel"
+   558→   558→                  inputMode="tel"
+   559→   559→                  placeholder="+221 77 000 00 00"
+   560→   560→                  value={customerPhone}
+   561→   561→                  onChange={(e) => setCustomerPhone(e.target.value)}
+   562→   562→                  required
+   563→   563→                  autoComplete="tel"
+   564→   564→                />
+   565→   565→              </div>
+   566→   566→              <p className="text-xs text-muted-foreground">
+   567→   567→                Le numéro sur lequel vous recevrez la confirmation et le suivi de votre réservation.
+   568→   568→              </p>
+   569→   569→            </div>
+   570→   570→
+   571→   571→            <div className="rounded-xl border px-4 py-3 flex items-start gap-3 text-sm bg-muted/40">
+   572→   572→              <Waves className="size-5 text-[#00A0E7] shrink-0 mt-0.5" />
+   573→   573→              <p className="text-muted-foreground leading-relaxed">
+   574→   574→                Après validation, votre créneau est <strong className="text-foreground">bloqué</strong> et vous êtes
+   575→   575→                redirigé vers <strong className="text-foreground">Wave</strong> pour régler{' '}
+   576→   576→                <strong className="text-foreground">{formatPrice(total)}</strong>. La réservation est confirmée dès
+   577→   577→                réception du paiement.
+   578→   578→              </p>
+   579→   579→            </div>
+   580→   580→
+   581→   581→            <DialogFooter className="mt-1 gap-2 sm:gap-0">
+   582→   582→              <Button
+   583→   583→                type="button"
+   584→   584→                variant="outline"
+   585→   585→                onClick={() => setStep('slot')}
+   586→   586→                disabled={submitting}
+   587→   587→              >
+   588→   588→                <ArrowLeft className="size-4" />
+   589→   589→                Retour
+   590→   590→              </Button>
+   591→   591→              <button
+   592→   592→                type="submit"
+   593→   593→                disabled={!canSubmit || submitting}
+   594→   594→                className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#00A0E7] px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0090D2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00A0E7] disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+   595→   595→              >
+   596→   596→                {submitting ? <Loader2 className="size-4 animate-spin" /> : <Waves className="size-4" />}
+   597→   597→                {submitting ? 'Réservation…' : `Valider et payer ${formatPrice(total)}`}
+   598→   598→              </button>
+   599→   599→            </DialogFooter>
+   600→   600→          </form>
+   601→   601→        )}
+   602→   602→
+   603→   603→        {/* ============ ÉTAPE 3 : confirmation ============ */}
+   604→   604→        {step === 'done' && created && (
+   605→   605→          <div className="grid gap-5">
+   606→   606→            <div className="flex flex-col items-center text-center gap-3 pt-2">
+   607→   607→              <span className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+   608→   608→                <CheckCircle2 className="size-9" />
+   609→   609→              </span>
+   610→   610→              <div>
+   611→   611→                <p className="text-lg font-bold">Créneau bloqué, {created.customerName.split(' ')[0]} !</p>
+   612→   612→                <p className="text-sm text-muted-foreground mt-1">
+   613→   613→                  {formatDateFr(created.date)} · {created.startTime} → {formatHourLabel(created.endTime)} ·{' '}
+   614→   614→                  {created.facility?.name}
+   615→   615→                </p>
+   616→   616→              </div>
+   617→   617→              <div className="rounded-xl border bg-muted/40 px-4 py-2.5 text-sm">
+   618→   618→                <span className="text-muted-foreground">Référence </span>
+   619→   619→                <span className="font-mono font-bold tracking-wide">
+   620→   620→                  {created.reference.slice(0, 10).toUpperCase()}
+   621→   621→                </span>
+   622→   622→              </div>
+   623→   623→            </div>
+   624→   624→
+   625→   625→            {waveLink ? (
+   626→   626→              <div className="grid gap-3">
+   627→   627→                <Button
+   628→   628→                  type="button"
+   629→   629→                  size="lg"
+   630→   630→                  className="h-12 text-base bg-[#00A0E7] hover:bg-[#0090D2] text-white"
+   631→   631→                  onClick={payWithWave}
+   632→   632→                >
+   633→   633→                  <Waves className="size-5" />
+   634→   634→                  Payer {formatPrice(created.amount ?? total)} avec Wave
+   635→   635→                </Button>
+   636→   636→                <p className="text-xs text-muted-foreground text-center leading-relaxed">
+   637→   637→                  Le paiement s&apos;ouvre dans un nouvel onglet. Dès réception, votre résération passe en
+   638→   638→                  « Confirmée ».
+   639→   639→                </p>
+   640→   640→              </div>
+   641→   641→            ) : (
+   642→   642→              <div className="rounded-xl border border-dashed px-4 py-4 flex items-start gap-3 text-sm bg-muted/30">
+   643→   643→                <Info className="size-5 text-primary shrink-0 mt-0.5" />
+   644→   644→                <p className="text-muted-foreground leading-relaxed">
+   645→   645→                  Le paiement <strong className="text-foreground">Wave Business</strong> est en cours
+   646→   646→                  d&apos;activation. Votre réservation est bien enregistrée : notre équipe vous contacte au{' '}
+   647→   647→                  <strong className="text-foreground">{created.customerPhone}</strong> pour finaliser le règlement de{' '}
+   648→   648→                  <strong className="text-foreground">{formatPrice(created.amount ?? total)}</strong>.
+   649→   649→                </p>
+   650→   650→              </div>
+   651→   651→            )}
+   652→   652→
+   653→   653→            <div className="rounded-xl bg-primary/5 border border-primary/25 px-4 py-3 text-sm text-muted-foreground leading-relaxed">
+   654→   654→              <p className="font-semibold text-foreground mb-1 flex items-center gap-1.5">
+   655→   655→                <Clock className="size-4 text-primary" /> Et ensuite ?
+   656→   656→              </p>
+   657→   657→              Présentez votre référence à l&apos;accueil 10 minutes avant le coup d&apos;envoi. Vestiaires, douches et
+   658→   658→              éclairage nocturne inclus.
+   659→   659→            </div>
+   660→   660→
+   661→   661→            <DialogFooter>
+   662→   662→              <Button type="button" className="w-full" onClick={() => onOpenChange(false)}>
+   663→   663→                Terminer
+   664→   664→              </Button>
+   665→   665→            </DialogFooter>
+   666→   666→          </div>
+   667→   667→        )}
+   668→   668→
+   669→   669→        {/* Pied de l'étape 1 */}
+   670→   670→        {step === 'slot' && (
+   671→   671→          <DialogFooter className="mt-1">
+   672→   672→            <Button type="button" className="w-full" size="lg" disabled={!canContinue} onClick={() => setStep('details')}>
+   673→   673→              {hours > 0 ? `Continuer — ${formatPrice(total)}` : 'Continuer'}
+   674→   674→              <ChevronRight className="size-4" />
+   675→   675→            </Button>
+   676→   676→          </DialogFooter>
+   677→   677→        )}
+   678→   678→      </DialogContent>
+   679→   679→    </Dialog>
+   680→   680→  )
+   681→   681→}
+   682→   682→

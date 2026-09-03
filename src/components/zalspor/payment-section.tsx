@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import {
   Eraser,
   ExternalLink,
   Link2,
   Loader2,
   Save,
-  Wallet,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -137,7 +137,8 @@ export function PaymentSection({ onUnauthorized }: { onUnauthorized: () => void 
       <div>
         <h2 className="text-2xl font-extrabold tracking-tight">Paiement Wave</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Configurez le lien de paiement Wave Business utilisé par les clients lors de la réservation.
+          Lien de paiement Wave Business utilisé par les clients pour verser l&apos;acompte (5 000 FCFA
+          par heure réservée) — le solde de la location est réglé sur place.
         </p>
       </div>
 
@@ -145,7 +146,9 @@ export function PaymentSection({ onUnauthorized }: { onUnauthorized: () => void 
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Wallet className="size-5 text-primary" />
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-black/5 overflow-hidden">
+              <Image src="/wave-logo.png" alt="Wave" width={22} height={22} className="rounded" />
+            </span>
             État du paiement en ligne
           </CardTitle>
           <CardDescription>Lien actuellement proposé aux clients lors de la réservation.</CardDescription>
@@ -223,7 +226,8 @@ export function PaymentSection({ onUnauthorized }: { onUnauthorized: () => void 
               <p id="wave-link-help" className="text-xs text-muted-foreground leading-relaxed">
                 Balises optionnelles remplacées automatiquement dans l&apos;URL lors de la redirection du
                 client :{' '}
-                <code className="font-mono text-foreground/80">{`{amount}`}</code> (montant en FCFA) et{' '}
+                <code className="font-mono text-foreground/80">{`{amount}`}</code> (acompte en FCFA =
+                5 000 × heures réservées) et{' '}
                 <code className="font-mono text-foreground/80">{`{reference}`}</code> (référence de la
                 réservation) — ex.&nbsp;
                 <code className="font-mono">https://pay.wave.com/m/xxxx/c/?amount={`{amount}`}</code>.

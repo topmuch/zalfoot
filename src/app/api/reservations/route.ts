@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { getAuthAdmin } from '@/lib/auth'
 import { OPEN_END_MINUTES, OPEN_START_MINUTES, isSlotPast, nowInDakar, timeToMinutes } from '@/lib/time'
+import { computeDeposit } from '@/lib/pricing'
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -59,7 +60,8 @@ export async function GET(request: NextRequest) {
  * POST /api/reservations — créer une réservation.
  * - Sans auth (source PUBLIC) : réservation client via le calendrier de créneaux.
  *   Nom + téléphone obligatoires, créneau 08:00 → minuit à l'heure pile, futur uniquement.
- *   Montant calculé côté serveur, paiement Wave (UNPAID à la création).
+ *   Montant total calculé côté serveur (25 000 F/h) + acompte Wave (5 000 F/h),
+ *   paiement WAVE (acompte UNPAID à la création).
  * - Avec auth (source ADMIN) : création directe par un admin, statut libre.
  */
 export async function POST(request: NextRequest) {
@@ -152,9 +154,11 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Montant en FCFA calculé côté serveur (durée × tarif horaire)
+  // Montants en FCFA calculés côté serveur :
+  // total = durée × tarif horaire · acompte = durée × 5 000 F (à verser via Wave)
   const durationHours = (timeToMinutes(endTime, true) - timeToMinutes(startTime)) / 60
   const amount = Math.round(durationHours * facility.pricePerHour)
+  const depositAmount = computeDeposit(durationHours)
 
   try {
     const reservation = await db.reservation.create({
@@ -168,6 +172,7 @@ export async function POST(request: NextRequest) {
         endTime,
         status,
         amount,
+        depositAmount,
         paymentStatus: auth && paymentStatusInput === 'PAID' ? 'PAID' : 'UNPAID',
         paymentMethod:
           auth && (paymentMethodInput === 'WAVE' || paymentMethodInput === 'ON_SITE')

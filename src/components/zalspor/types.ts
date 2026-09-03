@@ -23,8 +23,9 @@ export type Reservation = {
   startTime: string
   endTime: string // "00:00" = minuit
   status: string // PENDING | CONFIRMED | CANCELLED
-  amount: number | null // montant FCFA (durée × tarif)
-  paymentStatus: string // UNPAID | PAID
+  amount: number | null // montant total FCFA (durée × 25 000 F/h)
+  depositAmount: number | null // acompte FCFA (5 000 F/heure, versé via Wave)
+  paymentStatus: string // UNPAID | PAID (acompte reçu)
   paymentMethod: string | null // WAVE | ON_SITE
   notes: string | null
   source: string // PUBLIC | ADMIN
@@ -97,6 +98,9 @@ export type MonthAvailability = {
   days: Record<string, number>
 }
 
+/** Tarification partagée client / serveur (voir src/lib/pricing.ts) */
+export { DEPOSIT_PER_HOUR, computeDeposit } from '../../lib/pricing'
+
 export const FACILITY_TYPE_LABELS: Record<string, string> = {
   FOOTBALL: 'Football',
 }
@@ -116,8 +120,8 @@ export const RESERVATION_STATUS_META: Record<string, { label: string; variant: '
 }
 
 export const PAYMENT_STATUS_META: Record<string, { label: string; variant: 'default' | 'outline' }> = {
-  UNPAID: { label: 'Impayé', variant: 'outline' },
-  PAID: { label: 'Payé', variant: 'default' },
+  UNPAID: { label: 'Acompte dû', variant: 'outline' },
+  PAID: { label: 'Acompte reçu', variant: 'default' },
 }
 
 export const PAYMENT_METHOD_META: Record<string, string> = {

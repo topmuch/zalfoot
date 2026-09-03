@@ -26,14 +26,14 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatPrice, type Facility } from './types'
 import { Brand } from './brand'
-import { BookingDialog } from './booking-dialog'
+import { ReservationPage } from './reservation-page'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0 },
 }
 
-type PublicPage = 'accueil' | 'concept' | 'apropos'
+type PublicPage = 'accueil' | 'concept' | 'apropos' | 'reserver'
 
 const NAV_LINKS: { page: PublicPage; anchor?: string; label: string }[] = [
   { page: 'accueil', anchor: 'installations', label: 'Terrains' },
@@ -50,13 +50,13 @@ export function Landing({
   onOpenAdmin: () => void
 }) {
   const [page, setPage] = useState<PublicPage>('accueil')
-  const [bookingOpen, setBookingOpen] = useState(false)
   const [preselected, setPreselected] = useState<string | undefined>()
   const [navOpen, setNavOpen] = useState(false)
 
+  /** Ouvre la PAGE de réservation (terrain présélectionné en option). */
   function openBooking(facilityId?: string) {
     setPreselected(facilityId)
-    setBookingOpen(true)
+    goTo('reserver')
   }
 
   function goTo(target: PublicPage, anchor?: string) {
@@ -131,6 +131,13 @@ export function Landing({
                   {link.label}
                 </button>
               ))}
+              <button
+                type="button"
+                className="rounded-md px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer font-semibold text-foreground"
+                onClick={() => openBooking()}
+              >
+                <CalendarCheck className="size-4 text-primary" /> Réserver un terrain
+              </button>
               <button
                 type="button"
                 className="rounded-md px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer"
@@ -312,7 +319,7 @@ export function Landing({
                 <div className="grid gap-6 sm:grid-cols-3 mt-10">
                   {[
                     { n: '1', icon: CalendarCheck, t: 'Choisissez votre créneau', d: 'Calendrier visible : sélectionnez la date et l’heure (08:00 → minuit) parmi les créneaux libres.' },
-                    { n: '2', icon: Waves, t: 'Payez avec Wave', d: 'Laissez votre nom et votre numéro de téléphone, puis réglez directement via Wave Business.' },
+                    { n: '2', icon: Waves, t: 'Payez l’acompte avec Wave', d: 'Bloquez votre créneau avec un acompte de 5 000 FCFA par heure via Wave — le solde se règle sur place.' },
                     { n: '3', icon: Trophy, t: 'Jouez !', d: 'Votre créneau est bloqué : présentez votre référence à l’accueil et profitez de votre heure de foot.' },
                   ].map((step) => (
                     <Card key={step.n} className="relative overflow-hidden">
@@ -474,6 +481,10 @@ export function Landing({
                         </p>
                         <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
                           <Users className="size-3.5" /> jusqu&apos;à {f.capacity} joueurs
+                        </p>
+                        <p className="text-xs mt-2 flex items-center gap-1.5 text-[#0090D2] dark:text-[#4DC3F0]">
+                          <Waves className="size-3.5" /> Acompte de {formatPrice(5000)}/h à la réservation,
+                          solde sur place
                         </p>
                       </CardContent>
                       <CardFooter>
@@ -667,6 +678,13 @@ export function Landing({
             </section>
           </motion.div>
         )}
+        {page === 'reserver' && (
+          <ReservationPage
+            facilities={facilities.filter((f) => f.active)}
+            preselectedFacilityId={preselected}
+            onBack={() => goTo('accueil')}
+          />
+        )}
       </main>
 
       {/* ===== Footer (sticky) ===== */}
@@ -691,13 +709,6 @@ export function Landing({
           <p>Location de terrains de football à l&apos;heure — Dakar, Sénégal</p>
         </div>
       </footer>
-
-      <BookingDialog
-        open={bookingOpen}
-        onOpenChange={setBookingOpen}
-        facilities={facilities.filter((f) => f.active)}
-        preselectedFacilityId={preselected}
-      />
     </div>
   )
 }

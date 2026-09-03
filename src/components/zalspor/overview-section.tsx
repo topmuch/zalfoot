@@ -71,14 +71,14 @@ export function OverviewSection({
       title: 'Revenus estimés',
       value: formatPrice(stats?.estimatedRevenue ?? 0),
       icon: CircleDollarSign,
-      hint: `${stats?.unpaidReservations ?? 0} en attente de paiement`,
+      hint: `${stats?.unpaidReservations ?? 0} en attente d’acompte`,
       action: onGoToReservations,
     },
     {
-      title: 'Encaissé (payé)',
+      title: 'Acomptes encaissés',
       value: formatPrice(stats?.paidRevenue ?? 0),
       icon: Wallet,
-      hint: 'paiements Wave & sur place reçus',
+      hint: 'acomptes Wave reçus (5 000 F/h)',
       action: onGoToReservations,
     },
     {

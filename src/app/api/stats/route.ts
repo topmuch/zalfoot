@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { getAuthAdmin, unauthorizedResponse } from '@/lib/auth'
 import { timeToMinutes } from '@/lib/time'
+import { computeDeposit } from '@/lib/pricing'
 
 function isoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -25,17 +26,22 @@ export async function GET(request: NextRequest) {
   ])
 
   const confirmed = reservations.filter((r) => r.status === 'CONFIRMED')
+  const hoursOf = (r: (typeof reservations)[number]): number =>
+    Math.max((timeToMinutes(r.endTime, true) - timeToMinutes(r.startTime)) / 60, 0)
   const amountOf = (r: (typeof reservations)[number]): number => {
     if (typeof r.amount === 'number' && r.amount > 0) return r.amount
-    const hours = Math.max((timeToMinutes(r.endTime, true) - timeToMinutes(r.startTime)) / 60, 0)
-    return hours * (r.facility?.pricePerHour ?? 0)
+    return hoursOf(r) * (r.facility?.pricePerHour ?? 0)
   }
   const estimatedRevenue = confirmed.reduce((sum, r) => sum + amountOf(r), 0)
 
-  // Paiements Wave : encaissé et en attente
+  // Acomptes (5 000 F/heure) : encaissés via Wave et en attente
+  const depositOf = (r: (typeof reservations)[number]): number => {
+    if (typeof r.depositAmount === 'number' && r.depositAmount >= 0) return r.depositAmount
+    return computeDeposit(hoursOf(r))
+  }
   const paidRevenue = reservations
     .filter((r) => r.paymentStatus === 'PAID')
-    .reduce((sum, r) => sum + amountOf(r), 0)
+    .reduce((sum, r) => sum + depositOf(r), 0)
   const unpaidReservations = reservations.filter(
     (r) => r.paymentStatus === 'UNPAID' && r.status !== 'CANCELLED',
   ).length

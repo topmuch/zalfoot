@@ -60,8 +60,9 @@ model Reservation {
   startTime     String // HH:mm
   endTime       String // HH:mm ("00:00" = minuit)
   status        String   @default("PENDING") // PENDING | CONFIRMED | CANCELLED
-  amount        Float? // montant total en FCFA (durée × tarif/heure)
-  paymentStatus String   @default("UNPAID") // UNPAID | PAID
+  amount        Float? // montant total en FCFA (durée × 25 000 F/h)
+  depositAmount Float? // acompte versé à la réservation (5 000 F / heure réservée) via Wave
+  paymentStatus String   @default("UNPAID") // UNPAID | PAID (acompte reçu)
   paymentMethod String? // WAVE | ON_SITE
   notes         String?
   source        String   @default("PUBLIC") // PUBLIC | ADMIN

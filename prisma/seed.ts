@@ -43,7 +43,7 @@ async function main() {
     },
   })
 
-  // Terrains de football (uniquement — location à l'heure)
+  // Terrains de football (uniquement — location à l'heure : 25 000 FCFA/h)
   const [terrainA, terrainB, five] = await Promise.all(
     [
       {
@@ -51,7 +51,7 @@ async function main() {
         type: 'FOOTBALL',
         description:
           'Grand terrain 11v11 en gazon synthétique dernière génération, éclairage nocturne, buts avec filets, vestiaires et douches.',
-        pricePerHour: 15000,
+        pricePerHour: 25000,
         capacity: 22,
       },
       {
@@ -59,7 +59,7 @@ async function main() {
         type: 'FOOTBALL',
         description:
           'Pelouse naturelle entretenue, idéale pour les matchs amicaux et les entraînements d’équipe.',
-        pricePerHour: 12000,
+        pricePerHour: 25000,
         capacity: 22,
       },
       {
@@ -67,13 +67,21 @@ async function main() {
         type: 'FOOTBALL',
         description:
           'Mini-terrain 5v5 en gazon synthétique, filets de hauteur, parfait pour les matchs entre amis le soir.',
-        pricePerHour: 8000,
+        pricePerHour: 25000,
         capacity: 12,
       },
     ].map((data) => db.facility.create({ data })),
   )
 
-  // Réservations d'exemple (créneaux 08:00 → minuit, paiement Wave)
+  // Lien de paiement Wave Business (acompte 5 000 F/heure, {amount} remplacé)
+  await db.setting.create({
+    data: {
+      key: 'wave_payment_link',
+      value: 'https://pay.wave.com/m/M_sn_if40h6RgxkCj/c/sn/?amount={amount}',
+    },
+  })
+
+  // Réservations d'exemple (créneaux 08:00 → minuit — acompte Wave 5 000 F/h)
   const reservationsData: Array<{
     customerName: string
     customerEmail?: string
@@ -84,21 +92,22 @@ async function main() {
     endTime: string
     status: string
     amount?: number
+    depositAmount?: number
     paymentStatus?: string
     paymentMethod?: string
     notes?: string
     source: string
   }> = [
-    { customerName: 'ASC Jaraaf', customerEmail: 'contact@jaraaf.sn', customerPhone: '+221 77 111 22 33', facilityId: terrainA.id, date: daysFromNow(0), startTime: '18:00', endTime: '20:00', status: 'CONFIRMED', amount: 30000, paymentStatus: 'PAID', paymentMethod: 'WAVE', notes: 'Match amical de Ligue 1', source: 'PUBLIC' },
-    { customerName: 'Groupe des Yoff', customerPhone: '+221 78 222 33 44', facilityId: five.id, date: daysFromNow(0), startTime: '20:00', endTime: '21:00', status: 'CONFIRMED', amount: 8000, paymentStatus: 'PAID', paymentMethod: 'WAVE', notes: 'Five hebdomadaire entre voisins', source: 'PUBLIC' },
-    { customerName: 'Team Dakar United', customerPhone: '+221 77 333 44 55', facilityId: terrainA.id, date: daysFromNow(1), startTime: '19:00', endTime: '21:00', status: 'PENDING', amount: 30000, paymentStatus: 'UNPAID', paymentMethod: 'WAVE', notes: 'En attente du paiement Wave', source: 'PUBLIC' },
-    { customerName: 'Ibrahima Sow', customerEmail: 'i.sow@outlook.com', customerPhone: '+221 76 111 88 99', facilityId: terrainB.id, date: daysFromNow(1), startTime: '17:00', endTime: '18:00', status: 'CONFIRMED', amount: 12000, paymentStatus: 'PAID', paymentMethod: 'WAVE', source: 'PUBLIC' },
-    { customerName: 'FC Ouakam Espoirs', customerEmail: 'espoirs@ouakam.sn', customerPhone: '+221 77 222 99 88', facilityId: terrainB.id, date: daysFromNow(2), startTime: '16:00', endTime: '18:00', status: 'CONFIRMED', amount: 24000, paymentStatus: 'PAID', paymentMethod: 'ON_SITE', notes: 'Entraînement des U17', source: 'ADMIN' },
-    { customerName: 'Les amis de Parcelles', customerPhone: '+221 78 456 12 34', facilityId: five.id, date: daysFromNow(3), startTime: '21:00', endTime: '23:00', status: 'PENDING', amount: 16000, paymentStatus: 'UNPAID', paymentMethod: 'WAVE', source: 'PUBLIC' },
-    { customerName: 'Ousmane Ba', customerPhone: '+221 76 555 66 77', facilityId: terrainA.id, date: daysFromNow(4), startTime: '20:00', endTime: '22:00', status: 'CONFIRMED', amount: 30000, paymentStatus: 'PAID', paymentMethod: 'WAVE', source: 'PUBLIC' },
-    { customerName: 'Tournoi corporatif Sonatel', customerPhone: '+221 33 800 00 00', facilityId: terrainB.id, date: daysFromNow(5), startTime: '14:00', endTime: '18:00', status: 'CONFIRMED', amount: 48000, paymentStatus: 'PAID', paymentMethod: 'ON_SITE', notes: 'Tournoi inter-services, 4 équipes', source: 'ADMIN' },
+    { customerName: 'ASC Jaraaf', customerEmail: 'contact@jaraaf.sn', customerPhone: '+221 77 111 22 33', facilityId: terrainA.id, date: daysFromNow(0), startTime: '18:00', endTime: '20:00', status: 'CONFIRMED', amount: 50000, depositAmount: 10000, paymentStatus: 'PAID', paymentMethod: 'WAVE', notes: 'Match amical de Ligue 1', source: 'PUBLIC' },
+    { customerName: 'Groupe des Yoff', customerPhone: '+221 78 222 33 44', facilityId: five.id, date: daysFromNow(0), startTime: '20:00', endTime: '21:00', status: 'CONFIRMED', amount: 25000, depositAmount: 5000, paymentStatus: 'PAID', paymentMethod: 'WAVE', notes: 'Five hebdomadaire entre voisins', source: 'PUBLIC' },
+    { customerName: 'Team Dakar United', customerPhone: '+221 77 333 44 55', facilityId: terrainA.id, date: daysFromNow(1), startTime: '19:00', endTime: '21:00', status: 'PENDING', amount: 50000, depositAmount: 10000, paymentStatus: 'UNPAID', paymentMethod: 'WAVE', notes: 'En attente de l’acompte Wave', source: 'PUBLIC' },
+    { customerName: 'Ibrahima Sow', customerEmail: 'i.sow@outlook.com', customerPhone: '+221 76 111 88 99', facilityId: terrainB.id, date: daysFromNow(1), startTime: '17:00', endTime: '18:00', status: 'CONFIRMED', amount: 25000, depositAmount: 5000, paymentStatus: 'PAID', paymentMethod: 'WAVE', source: 'PUBLIC' },
+    { customerName: 'FC Ouakam Espoirs', customerEmail: 'espoirs@ouakam.sn', customerPhone: '+221 77 222 99 88', facilityId: terrainB.id, date: daysFromNow(2), startTime: '16:00', endTime: '18:00', status: 'CONFIRMED', amount: 50000, depositAmount: 10000, paymentStatus: 'PAID', paymentMethod: 'ON_SITE', notes: 'Entraînement des U17', source: 'ADMIN' },
+    { customerName: 'Les amis de Parcelles', customerPhone: '+221 78 456 12 34', facilityId: five.id, date: daysFromNow(3), startTime: '21:00', endTime: '23:00', status: 'PENDING', amount: 50000, depositAmount: 10000, paymentStatus: 'UNPAID', paymentMethod: 'WAVE', source: 'PUBLIC' },
+    { customerName: 'Ousmane Ba', customerPhone: '+221 76 555 66 77', facilityId: terrainA.id, date: daysFromNow(4), startTime: '20:00', endTime: '22:00', status: 'CONFIRMED', amount: 50000, depositAmount: 10000, paymentStatus: 'PAID', paymentMethod: 'WAVE', source: 'PUBLIC' },
+    { customerName: 'Tournoi corporatif Sonatel', customerPhone: '+221 33 800 00 00', facilityId: terrainB.id, date: daysFromNow(5), startTime: '14:00', endTime: '18:00', status: 'CONFIRMED', amount: 100000, depositAmount: 20000, paymentStatus: 'PAID', paymentMethod: 'ON_SITE', notes: 'Tournoi inter-services, 4 équipes', source: 'ADMIN' },
     { customerName: 'Mariama Sy', customerEmail: 'm.sy@gmail.com', customerPhone: '+221 77 654 32 10', facilityId: five.id, date: daysFromNow(-1), startTime: '19:00', endTime: '20:00', status: 'CANCELLED', notes: 'Annulé par le client (pluie)', source: 'PUBLIC' },
-    { customerName: 'Lycée Kennedy — EPS', customerEmail: 'eps@kennedy.edu', facilityId: terrainA.id, date: daysFromNow(-2), startTime: '09:00', endTime: '11:00', status: 'CONFIRMED', amount: 30000, paymentStatus: 'PAID', paymentMethod: 'ON_SITE', notes: 'Cours d’EPS, facture mensuelle', source: 'ADMIN' },
+    { customerName: 'Lycée Kennedy — EPS', customerEmail: 'eps@kennedy.edu', facilityId: terrainA.id, date: daysFromNow(-2), startTime: '09:00', endTime: '11:00', status: 'CONFIRMED', amount: 50000, depositAmount: 10000, paymentStatus: 'PAID', paymentMethod: 'ON_SITE', notes: 'Cours d’EPS, facture mensuelle', source: 'ADMIN' },
   ]
 
   for (const r of reservationsData) {

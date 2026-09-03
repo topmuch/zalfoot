@@ -147,3 +147,28 @@ Stage Summary:
 - ✅ Lien Wave Business configurable par l'admin (section « Paiement » du dashboard) — prêt à recevoir le lien réel de l'utilisateur ; sans lien, la réservation reste enregistrée avec message d'attente.
 - ✅ Dashboard auto-actualisé (polling 10 s + toast) dès qu'un client réserve — vérifié end-to-end.
 - ✅ Logo 2x (80 px) partout : landing, login, dashboard, footer.
+
+---
+Task ID: 8
+Agent: main (Z.ai Code)
+Task: Réservation en PAGE dédiée (fini la modale) · 25 000 F/h avec acompte 5 000 F versé via Wave · intégration du lien de paiement Wave réel + icône Wave fournie.
+
+Work Log:
+- Icône Wave fournie (upload/wave.png, 332×419, fond noir opaque : icône pingouin + wordmark) copiée dans public/ ; extraction de l'icône seule via PIL flood-fill depuis les bords (noir extérieur → transparent, pingouin noir intérieur préservé) → public/wave-logo.png (255×253, coins arrondis transparents), vérifiée par VLM sur fond blanc.
+- Nouveau src/lib/pricing.ts : DEPOSIT_PER_HOUR = 5000 + computeDeposit(hours) ; ré-exporté depuis types.ts pour le client.
+- Schéma Prisma : Reservation.depositAmount (Float?) ajouté ; db:push + redémarrage du serveur dev (setsid nohup, le client Prisma en mémoire ne connaissait pas le nouveau champ).
+- scripts/apply-new-pricing.ts exécuté : 3 terrains → 25 000 FCFA/h (tarif unique), Setting wave_payment_link = https://pay.wave.com/m/M_sn_if40h6RgxkCj/c/sn/?amount={amount} ({amount} = acompte), 10 réservations recalculées (amount + depositAmount). Seed.ts mis en cohérence pour les prochains reseed.
+- API POST /api/reservations : depositAmount = 5 000 F × heures calculé et stocké côté serveur (curl : 2 h → total 50 000, acompte 10 000, WAVE/UNPAID). API /api/stats : paidRevenue = somme des acomptes des réservations PAID.
+- reservation-page.tsx (NOUVEAU, ~700 lignes, remplace booking-dialog.tsx supprimé) : PAGE complète — en-tête avec retour accueil + badges (25 000 F/h, acompte Wave 5 000 F/h, solde sur place) + stepper cliquable 1 Créneau/2 Coordonnées/3 Paiement ; étape 1 : terrain + calendrier mensuel + grille 16 créneaux (passés/réservés grisés, légende) + carte récap Total/Acompte/Solde ; étape 2 : résumé + formulaire nom + téléphone (Wave) + note avec icône Wave ; étape 3 : confirmation + référence + bloc paiement bleu Wave avec icône + bouton « Payer X FCFA avec Wave » (window.open buildWaveUrl {amount=acompte, reference}) + solde sur place + actions. Scroll-to-top à chaque étape.
+- landing.tsx : vue SPA 'reserver' (4e page) rendue dans main ; openBooking() → goTo('reserver') (plus de Dialogue) ; entrée « Réserver un terrain » ajoutée au menu burger mobile ; textes acompte (Comment ça marche étape 2, cartes tarifs du Concept « Acompte de 5 000 F/h à la réservation »).
+- Admin : reservations-section (colonne Paiement = méthode + badge Acompte reçu/dû + « Acompte X · Total Y », actions « Acompte reçu »/« Acompte non reçu », toasts adaptés), overview-section (« Acomptes encaissés — acomptes Wave reçus (5 000 F/h) », hint « en attente d'acompte »), payment-section (icône Wave dans le titre, aide {amount} = acompte).
+- Vérifications agent-browser desktop 1440×900 : clic « Réserver ce terrain » → PAGE dédiée (H1 + stepper + 3 terrains 25 000 F/h) ; créneaux passés jusqu'à 18h grisés (heure Dakar 18h31), 19h réservé ; sélection 20h+21h → « Continuer — acompte 10 000 FCFA » ; étape 2 → Aminata Touré → 201 + toast + étape 3 « Payer 10 000F CFA avec Wave » avec icône (VLM) ; clic → NOUVEL ONGLET https://pay.wave.com/m/M_sn_if40h6RgxkCj?amount=10000 ( redirection réelle du lien fourni, page « Pay with Wave » + QR code capturée et vérifiée VLM) ; dashboard : compteur 11→12 SANS rechargement, toast « Nouvelle réservation reçue 🎉 » capturé via wait --text après création API d'une résa client ; « Acompte reçu » testé (badge passe de dû à reçu, acompte affiché) ; section Paiement : icône Wave + badge Activé + lien réel + formulaire.
+- Vérifications mobile 375×812 : dashboard restauré (cartes Acomptes encaissés 75 000 F), déconnexion puis parcours complet : Réserver maintenant → page dédiée empilée (VLM), 22h sélectionné → « Payer 5 000F CFA avec Wave » (1 h × 5 000 exactement), aucune erreur console, footer poussé naturellement sur page longue.
+- Nettoyage : 7 réservations de test supprimées (BD revenue aux 10 réservations seedées). Lint : 0 erreur. dev.log : aucune erreur runtime.
+
+Stage Summary:
+- ✅ Réservation = PAGE dédiée (vue SPA « reserver »), plus aucune modale.
+- ✅ Tarification : 25 000 FCFA/h (tous terrains, recalculés), acompte de 5 000 FCFA/heure réservée payé via Wave, solde sur place.
+- ✅ Lien Wave Business réel intégré et configuré en BD : https://pay.wave.com/m/M_sn_if40h6RgxkCj/c/sn/?amount={amount} — pour 1 h, ouvre exactement le lien fourni (amount=5000) ; vérifié sur la vraie page Wave (QR code).
+- ✅ Icône Wave (fournie) extraite avec fond transparent et intégrée : en-tête de la page réservation, note étape 2, bloc + bouton de paiement étape 3, section Paiement du dashboard.
+- ✅ Dashboard admin : auto-update + toast à chaque résa client (inchangé et re-vérifié), colonne Paiement avec acomptes, actions « Acompte reçu », carte « Acomptes encaissés ».
