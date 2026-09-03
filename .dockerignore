@@ -1,0 +1,48 @@
+# Contexte de build Docker — on n'envoie que le nécessaire
+
+# Dépendances & build (réinstallés proprement dans l'image)
+node_modules
+.next
+out
+build
+
+# Git & CI
+.git
+.gitignore
+.github
+
+# Environnement (DATABASE_URL est défini dans le Dockerfile / compose)
+.env
+.env.*
+!.env.example
+
+# Fichiers locaux & journaux
+*.log
+dev.log
+server.log
+npm-debug.log*
+
+# Dossiers propres à l'environnement de développement / à la sandbox
+download
+upload
+screenshots
+tool-results
+tests
+examples
+mini-services
+skills
+agent-ctx
+.zscripts
+worklog.md
+Caddyfile
+db/*.db-journal
+db/*.db-shm
+db/*.db-wal
+
+# Divers
+.DS_Store
+*.pem
+*.tsbuildinfo
+next-env.d.ts
+DEPLOY.md
+docker-compose*.yml

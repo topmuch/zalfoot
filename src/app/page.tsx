@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Image from 'next/image'
 import { apiFetch, getToken, setToken } from '@/components/zalspor/api'
+import { useSiteIdentity } from '@/components/zalspor/site-settings'
 import { Landing } from '@/components/zalspor/landing'
 import { AdminLogin } from '@/components/zalspor/admin-login'
 import { AdminDashboard } from '@/components/zalspor/admin-dashboard'
@@ -10,6 +12,7 @@ import type { Admin, Facility } from '@/components/zalspor/types'
 type View = 'public' | 'login' | 'dashboard'
 
 export default function Home() {
+  const { siteName, siteLogo } = useSiteIdentity()
   const [view, setView] = useState<View>('public')
   const [currentAdmin, setCurrentAdmin] = useState<Admin | null>(null)
   const [facilities, setFacilities] = useState<Facility[]>([])
@@ -57,13 +60,16 @@ export default function Home() {
   if (booting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <span className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground animate-pulse">
-            <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-          </span>
-          <p className="text-sm text-muted-foreground">Chargement de Zalfoot…</p>
+        <div className="flex flex-col items-center gap-5">
+          <Image
+            src={siteLogo || '/logo.webp'}
+            alt={`Logo ${siteName}`}
+            width={96}
+            height={96}
+            priority
+            className="rounded-2xl object-contain animate-pulse"
+          />
+          <p className="text-sm text-muted-foreground">Chargement de {siteName}…</p>
         </div>
       </div>
     )

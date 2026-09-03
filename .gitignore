@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -52,3 +53,19 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# === Fichiers propres à l'environnement de développement (pas pour GitHub) ===
+/download/
+/upload/
+/screenshots/
+/tool-results/
+/tests/
+/examples/
+/mini-services/
+/.zscripts/
+/worklog.md
+/Caddyfile
+/agent-ctx/
+db/*.db-journal
+db/*.db-shm
+db/*.db-wal

@@ -1,0 +1,38 @@
+# ============================================================
+#  Zalfoot — orchestration Docker (local, VPS ou Coolify)
+#  Démarrage :  docker compose up -d --build
+#  Suivi :      docker compose logs -f
+#  Arrêt :      docker compose down
+#
+#  Volumes persistants :
+#    zalfoot_data    -> /app/data           (base SQLite)
+#    zalfoot_uploads -> /app/public/uploads (logos uploadés)
+# ============================================================
+
+services:
+  zalfoot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: zalfoot:latest
+    container_name: zalfoot
+    restart: unless-stopped
+    ports:
+      # Port hôte (modifiable via PORT=8080 docker compose up -d) -> port conteneur 3000
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/app/data/custom.db
+    volumes:
+      - zalfoot_data:/app/data
+      - zalfoot_uploads:/app/public/uploads
+    healthcheck:
+      test: ["CMD", "bun", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
+
+volumes:
+  zalfoot_data:
+  zalfoot_uploads:
