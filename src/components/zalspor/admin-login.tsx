@@ -84,7 +84,7 @@ export function AdminLogin({
                   <Input
                     id="login-email"
                     type="email"
-                    placeholder="admin@zalfoot.com"
+                    placeholder="vous@exemple.com"
                     className="pl-9"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -124,17 +124,6 @@ export function AdminLogin({
                 {submitting ? 'Connexion…' : 'Se connecter'}
               </Button>
             </form>
-
-            <div className="mt-6 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-sm">
-              <p className="font-semibold text-primary flex items-center gap-2">
-                <Lock className="size-4" /> Compte de démonstration
-              </p>
-              <p className="mt-1 text-muted-foreground">
-                E-mail : <code className="font-mono text-foreground">admin@zalfoot.com</code>
-                <br />
-                Mot de passe : <code className="font-mono text-foreground">admin123</code>
-              </p>
-            </div>
           </CardContent>
         </Card>
       </main>
