@@ -8,14 +8,11 @@ import {
   CalendarCheck,
   Clock,
   Flame,
-  Goal,
   GraduationCap,
   Heart,
   LogIn,
   MapPin,
-  Moon,
   Phone,
-  Shirt,
   Sparkles,
   Sprout,
   Target,
@@ -187,12 +184,75 @@ export function Landing({
             variants={fadeInUp}
             transition={{ duration: 0.35 }}
           >
-            {/* ===== Terrains ===== (désormais en tête de page : le hero est déplacé juste après) */}
+            {/* ===== Hero (haut de page) : image du ballon sur le terrain + écritures superposées ===== */}
+            <section className="relative overflow-hidden">
+              <div className="relative flex items-center min-h-[560px] sm:min-h-[520px] lg:min-h-[600px]">
+                <Image
+                  src="/hero-football.png"
+                  alt="Terrain de football de Zalfoot, pelouse verte balisée avec buts et projecteurs"
+                  fill
+                  priority
+                  sizes="100vw"
+                  className="object-cover"
+                />
+                {/* Voiles sombres pour la lisibilité des écritures superposées */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/15" />
+
+                <div className="relative w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20">
+                  <div className="max-w-2xl flex flex-col gap-5">
+                    <Badge className="w-fit gap-1.5 border-white/30 bg-white/15 text-white backdrop-blur">
+                      <Sparkles className="size-3.5" />
+                      Location de terrains de football à l&apos;heure
+                    </Badge>
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] text-white">
+                      Réservez votre <span className="text-emerald-400">terrain de football</span> en
+                      quelques clics.
+                    </h1>
+                    <p className="text-base sm:text-lg text-white/85 max-w-xl">
+                      Gazon synthétique entretenu, éclairage nocturne, vestiaires : consultez les
+                      disponibilités en temps réel et bloquez votre heure de foot en moins
+                      d&apos;une minute.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button size="lg" className="h-12 text-base" onClick={() => openBooking()}>
+                        <CalendarCheck className="size-5" />
+                        Réserver maintenant
+                      </Button>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="h-12 text-base border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                        onClick={onOpenAdmin}
+                      >
+                        <LogIn className="size-5" />
+                        Connexion
+                      </Button>
+                    </div>
+
+                    <dl className="grid grid-cols-3 gap-4 pt-6 mt-2 border-t border-white/25">
+                      {[
+                        { k: String(facilities.length || 3), v: 'Terrains de football' },
+                        { k: '7j/7', v: 'De 8 h à minuit' },
+                        { k: '98%', v: 'Joueurs satisfaits' },
+                      ].map((s) => (
+                        <div key={s.v} className="flex flex-col">
+                          <dt className="text-2xl sm:text-3xl font-extrabold text-emerald-400">{s.k}</dt>
+                          <dd className="text-sm text-white/75">{s.v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ===== Terrains : écritures placées sous l'image du hero ===== */}
             <section id="installations" className="py-14 sm:py-20 bg-muted/40 border-y">
               <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
                   <div>
-                    <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Nos terrains de football</h1>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Nos terrains de football</h2>
                     <p className="text-muted-foreground mt-2 max-w-2xl">
                       Du gazon synthétique, tout simplement. Surface stable par tous les temps,
                       entretenu quotidiennement, propre même en saison des pluies.
@@ -202,56 +262,6 @@ export function Landing({
                     <MapPin className="size-3.5" /> {CONTACT.address}
                   </Badge>
                 </div>
-
-                {/* Bannière gazon synthétique */}
-                <motion.div
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: '-50px' }}
-                  variants={fadeInUp}
-                  transition={{ duration: 0.4 }}
-                  className="relative rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5 mb-6"
-                >
-                  <div className="relative aspect-[2/1] sm:aspect-[5/2]">
-                    <Image
-                      src="/gazon-synthetique.png"
-                      alt="Gazon synthétique dernière génération des terrains de football Zalfoot"
-                      fill
-                      sizes="100vw"
-                      loading="eager"
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
-                  </div>
-                  <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                    <div className="text-white max-w-xl">
-                      <Badge className="gap-1.5 bg-emerald-500 hover:bg-emerald-500 text-white border-0">
-                        <Sprout className="size-3.5" /> 100 % gazon synthétique
-                      </Badge>
-                      <p className="text-xl sm:text-2xl font-extrabold mt-3 leading-tight">
-                        Le plaisir du jeu, sur une surface toujours propre et stable.
-                      </p>
-                      <p className="text-sm text-white/85 mt-1.5">
-                        Fibres dernière génération et drainage rapide : le terrain est prêt, quelle
-                        que soit la météo.
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2 shrink-0">
-                      {[
-                        { icon: Moon, label: 'Éclairage nocturne' },
-                        { icon: Goal, label: 'Buts avec filets' },
-                        { icon: Shirt, label: 'Vestiaires & douches' },
-                      ].map((c) => (
-                        <span
-                          key={c.label}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-3 py-1.5 text-xs font-medium text-white"
-                        >
-                          <c.icon className="size-3.5" /> {c.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
 
                 {/* Cartes terrains — centrées horizontalement, même quand il ne reste qu'un terrain actif */}
                 <div className="flex flex-wrap justify-center gap-5">
@@ -308,83 +318,38 @@ export function Landing({
               </div>
             </section>
 
-            {/* ===== Hero déplacé : image du ballon sur le terrain + écritures superposées ===== */}
-            <motion.section
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-50px' }}
-              variants={fadeInUp}
-              transition={{ duration: 0.5 }}
-              className="relative overflow-hidden border-y"
-            >
-              <div className="relative flex items-center min-h-[560px] sm:min-h-[460px] lg:min-h-[540px]">
-                <Image
-                  src="/hero-football.png"
-                  alt="Terrain de football de Zalfoot, pelouse verte balisée avec buts et projecteurs"
-                  fill
-                  sizes="100vw"
-                  className="object-cover"
-                />
-                {/* Voiles sombres pour la lisibilité des écritures superposées */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/15" />
-
-                <div className="relative w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20">
-                  <div className="max-w-2xl flex flex-col gap-5">
-                    <Badge className="w-fit gap-1.5 border-white/30 bg-white/15 text-white backdrop-blur">
-                      <Sparkles className="size-3.5" />
-                      Location de terrains de football à l&apos;heure
-                    </Badge>
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] text-white">
-                      Réservez votre <span className="text-emerald-400">terrain de football</span> en
-                      quelques clics.
-                    </h2>
-                    <p className="text-base sm:text-lg text-white/85 max-w-xl">
-                      Gazon synthétique entretenu, éclairage nocturne, vestiaires : consultez les
-                      disponibilités en temps réel et bloquez votre heure de foot en moins
-                      d&apos;une minute.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Button size="lg" className="h-12 text-base" onClick={() => openBooking()}>
-                        <CalendarCheck className="size-5" />
-                        Réserver maintenant
-                      </Button>
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="h-12 text-base border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-                        onClick={onOpenAdmin}
-                      >
-                        <LogIn className="size-5" />
-                        Connexion
-                      </Button>
-                    </div>
-
-                    <dl className="grid grid-cols-3 gap-4 pt-6 mt-2 border-t border-white/25">
-                      {[
-                        { k: String(facilities.length || 3), v: 'Terrains de football' },
-                        { k: '7j/7', v: 'De 8 h à minuit' },
-                        { k: '98%', v: 'Joueurs satisfaits' },
-                      ].map((s) => (
-                        <div key={s.v} className="flex flex-col">
-                          <dt className="text-2xl sm:text-3xl font-extrabold text-emerald-400">{s.k}</dt>
-                          <dd className="text-sm text-white/75">{s.v}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </motion.section>
-
-            {/* ===== Fonctionnement ===== */}
+            {/* ===== Fonctionnement : écritures « Comment ça marche ? » superposées sur l'image ===== */}
             <section id="fonctionnement" className="py-14 sm:py-20">
               <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
-                <h2 className="text-3xl font-extrabold tracking-tight text-center">Comment ça marche ?</h2>
-                <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
-                  Trois étapes suffisent pour jouer.
-                </p>
-                <div className="grid gap-6 sm:grid-cols-3 mt-10">
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: '-50px' }}
+                  variants={fadeInUp}
+                  transition={{ duration: 0.5 }}
+                  className="relative rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5"
+                >
+                  <div className="relative min-h-[300px] sm:min-h-[360px] flex items-center justify-center">
+                    <Image
+                      src="/gazon-synthetique.png"
+                      alt="Gazon synthétique dernière génération des terrains de football Zalfoot"
+                      fill
+                      sizes="100vw"
+                      className="object-cover"
+                    />
+                    {/* Voile sombre pour la lisibilité des écritures superposées */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60" />
+                    <div className="relative text-center px-6 py-10">
+                      <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+                        Comment ça marche ?
+                      </h2>
+                      <p className="text-white/85 mt-3 text-base sm:text-lg max-w-xl mx-auto">
+                        Trois étapes suffisent pour jouer.
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+                <div className="grid gap-6 sm:grid-cols-3 mt-8">
                   {[
                     { n: '1', icon: CalendarCheck, t: 'Choisissez votre créneau', d: 'Calendrier visible : sélectionnez la date et l’heure (08:00 → minuit) parmi les créneaux libres.' },
                     { n: '2', icon: Waves, t: 'Payez l’acompte avec Wave', d: 'Bloquez votre créneau avec un acompte de 5 000 FCFA par heure via Wave — le solde se règle sur place.' },

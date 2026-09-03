@@ -270,3 +270,23 @@ Stage Summary:
 - ✅ Terrain restant centré (1 ou 2 terrains actifs) au lieu d'aligné à gauche ; 3 terrains = grille pleine largeur inchangée.
 - ✅ Image du hero déplacée sous « Nos terrains de football » avec toutes les écritures du hero superposées sur l'image (badge, titre, paragraphe, boutons Réserver maintenant / Connexion, stats) ; l'ancien hero de haut de page a disparu, la page démarre par les terrains.
 - ✅ Vérifié desktop + mobile + interactions + cas 3 terrains, état BD restauré.
+
+---
+Task ID: 16
+Agent: main (Z.ai Code)
+Task: Réorganiser la page d'accueil : 1) écritures du hero superposées sur l'image du hero (retour en haut de page) ; 2) écritures « Nos terrains de football » sous l'image du hero ; 3) écritures « Comment ça marche ? » superposées sur l'image placée avant la section.
+
+Work Log:
+- Interprétation validée : le hero (image du ballon sur le terrain + écritures superposées) remonte EN HAUT de page ; la section « Nos terrains de football » (titre + description + cartes) passe juste EN DESSOUS de l'image du hero ; la bannière gazon (image du ballon sur le gazon) est déplacée juste avant la section « Comment ça marche » et porte les écritures « Comment ça marche ? » + « Trois étapes suffisent pour jouer. » superposées.
+- landing.tsx (page accueil) :
+  · Hero déplacé en première section : bannière pleine largeur /hero-football.png (priority, object-cover, min-h 560/520/600px), double voile sombre, écritures superposées en blanc (badge, h1 « Réservez votre terrain de football en quelques clics. », paragraphe, boutons « Réserver maintenant » + « Connexion », stats) — l'ancien hero mi-page supprimé.
+  · Section terrains : titre repassé en h2 « Nos terrains de football » + description « Du gazon synthétique, tout simplement… » placés sous le hero ; cartes centrées (flex) conservées ; ancienne bannière gazon retirée de cette section (son texte « Le plaisir du jeu… » et les tags disparaissent).
+  · Section fonctionnement : nouvelle bannière /gazon-synthetique.png (rounded-2xl, min-h 300/360px, voile sombre) avec « Comment ça marche ? » + « Trois étapes suffisent pour jouer. » superposés en blanc centré, suivie des 3 cartes d'étapes (mt-8) ; ancien en-tête texte supprimé.
+  · Imports nettoyés : Goal, Moon, Shirt retirés (inutilisés après suppression de la bannière gazon).
+- Vérifications agent-browser : desktop 1440×900 → hero en haut avec écritures superposées lisibles ; « Nos terrains » sous le hero avec carte Terrain A centrée, bannière « Le plaisir du jeu » disparue ; bannière « Comment ça marche ? » sur l'image gazon avant les 3 étapes. Clics testés : « Réserver maintenant » → page réservation ; « Connexion » → login admin. Mobile 375×812 → hero, terrains et bannière lisibles, aucun débordement. Console sans erreur, `bun run lint` 0 erreur, dev.log propre.
+
+Stage Summary:
+- ✅ Hero en haut de page : image + écritures superposées (badge, titre, paragraphe, boutons Réserver maintenant / Connexion, stats).
+- ✅ « Nos terrains de football » + description juste sous l'image du hero, cartes centrées.
+- ✅ « Comment ça marche ? » / « Trois étapes suffisent pour jouer. » superposés sur l'image gazon placée avant les 3 étapes.
+- ✅ Vérifié desktop + mobile + interactions ; aucune erreur.
