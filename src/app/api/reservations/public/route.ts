@@ -14,6 +14,8 @@ export async function GET() {
     where: {
       status: { in: ['PENDING', 'CONFIRMED'] },
       date: { gte: now.date },
+      // Un terrain désactivé n'apparaît plus sur le calendrier public
+      facility: { active: true },
     },
     select: {
       id: true,

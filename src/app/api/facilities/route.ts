@@ -5,8 +5,19 @@ import { getAuthAdmin } from '@/lib/auth'
 // Zalfoot ne gère que la location de terrains de football à l'heure.
 const VALID_TYPES = new Set(['FOOTBALL'])
 
-/** GET /api/facilities — liste publique des installations. */
-export async function GET() {
+/** GET /api/facilities — liste publique des installations.
+ * ?all=1 (admin) : inclut aussi les terrains désactivés (gestion dashboard). */
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url)
+  const includeInactive = url.searchParams.get('all') === '1'
+  if (includeInactive) {
+    const auth = await getAuthAdmin(request)
+    if (!auth) {
+      return Response.json({ error: 'Non authentifié.' }, { status: 401 })
+    }
+    const facilities = await db.facility.findMany({ orderBy: { name: 'asc' } })
+    return Response.json(facilities)
+  }
   const facilities = await db.facility.findMany({
     where: { active: true },
     orderBy: { name: 'asc' },

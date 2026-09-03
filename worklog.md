@@ -229,3 +229,25 @@ Stage Summary:
 - ✅ Onglet Paramètres : nom & logo du site (upload instantané appliqué partout), SEO dynamique (title/meta/icon via generateMetadata), notifications e-mail de commande (adresse de réception + SMTP complet + e-mail de test). Envoi réel dès que l'admin renseigne son SMTP (Brevo/Gmail/OVH…).
 - ✅ Dashboard et accueil élargis en 16:9 (conteneurs 1920px, largeur pleine vérifiée à 1920×1080).
 - ✅ « Espace admin » remplacé par « Connexion » (header, hero, burger mobile).
+
+---
+Task ID: 11
+Agent: main (Z.ai Code)
+Task: Supprimer le « Rappel démo » du dashboard · terrains désactivés invisibles sur l'accueil · audit complet de la connexion accueil ↔ dashboard (réservations, déactivation).
+
+Work Log:
+- « Rappel démo » supprimé : bloc (MapPin + « Connecté avec admin@… » + « Créer un administrateur… ») retiré de la sidebar du dashboard (admin-dashboard.tsx) ; MapPin conservé (icône nav Terrains). Vérifié par VLM : sidebar = uniquement GESTION + 7 entrées.
+- API /api/facilities?all=1 (NOUVEAU) : les admins reçoivent aussi les terrains désactivés (401 sans token) ; la route publique sans paramètre ne renvoie QUE les terrains actifs. Dashboard (loadAll) → apiFetch('/api/facilities?all=1') : la section Terrains affiche 3 cartes avec badges Actif/Inactif et boutons Désactiver/Réactiver même quand inactifs.
+- Calendrier public (/api/reservations/public) : filtre facility: { active: true } ajouté — les réservations d'un terrain désactivé n'apparaissent plus sur la page Calendrier.
+- Audit connexion accueil ↔ dashboard (vérifié end-to-end au navigateur) :
+  · Terrains : désactivation Terrain C en BD → /api/facilities 1 seul terrain, accueil = 1 carte (pas de Terrain C), page réservation = A seulement, calendrier public sans résa C, /api/availability → 404, POST /api/reservations sur terrain désactivé → 404 « Terrain introuvable ou inactif » (création impossible).
+  · Désactivation des 3 terrains depuis le dashboard (bouton Désactiver ×3) → accueil : 0 carte, stat hero « 0 », page réservation : état vide propre « Aucun terrain n'est disponible pour le moment ».
+  · Réactivation des 3 terrains depuis le dashboard (Réactiver ×3) → accueil : 3 cartes + 3 boutons « Réserver ce terrain » actifs, stat hero « 3 » (après rechargement de la page — comportement attendu).
+  · Réservations : réservation « Test Synchro Accueil » créée (20:00–21:00, 14 sept) → visible immédiatement sur la page Calendrier public (jour « 14 · 1 résa. » → détail « lun. 14 sept. 2026, 20:00 → 21:00, En attente, Terrain A, Test Synchro Accueil ») ; dashboard temps réel déjà vérifié (polling 10 s + toast) ; tarif 25 000 F/h + acompte 5 000 F/h pilotés par le tarif BD du terrain et le lien Wave des Paramètres.
+  · Statistiques hero et section terrains de l'accueil alimentées par /api/facilities (mêmes données que le dashboard).
+- Nettoyage : réservation de test supprimée (11 réservations seedées en BD), 3 terrains réactivés, lint 0 erreur, dev.log sans erreur, aucune erreur de page au navigateur.
+
+Stage Summary:
+- ✅ « Rappel démo » supprimé de la sidebar du dashboard.
+- ✅ Terrains désactivés invisibles partout côté public : accueil (cartes + stats), page réservation (état vide propre), calendrier public, API availability (404) et création de résa bloquée (404) — le dashboard continue de les voir avec boutons Réactiver.
+- ✅ Connexion accueil ↔ dashboard vérifiée de bout en bout : désactivation/réactivation de terrains reflétées côté public, nouvelles réservations visibles instantanément sur le calendrier public et le dashboard (temps réel), tarifs/acomptes/lien Wave pilotés par les données du dashboard.

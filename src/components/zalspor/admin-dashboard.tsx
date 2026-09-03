@@ -95,7 +95,8 @@ export function AdminDashboard({
           apiFetch<Stats>('/api/stats', { auth: true }),
           apiFetch<Reservation[]>('/api/reservations', { auth: true }),
           apiFetch<CalendarEvent[]>('/api/calendar', { auth: true }),
-          apiFetch<Facility[]>('/api/facilities'),
+          // ?all=1 : le dashboard gère aussi les terrains désactivés
+          apiFetch<Facility[]>('/api/facilities?all=1', { auth: true }),
           apiFetch<Admin[]>('/api/admins', { auth: true }),
         ])
 
@@ -267,17 +268,6 @@ export function AdminDashboard({
                 {item.label}
               </button>
             ))}
-
-            <div className="mt-6 rounded-xl border bg-card p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                <MapPin className="size-4 text-primary" />
-                Rappel démo
-              </div>
-              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                Connecté avec <strong className="text-foreground">{currentAdmin.email}</strong>.
-                Utilisez « Créer un administrateur » dans la section Administrateurs pour ajouter un compte.
-              </p>
-            </div>
           </div>
         </aside>
 
