@@ -79,3 +79,27 @@ Stage Summary:
 - ✅ Hero de la page d'accueil : image de terrain de football générée par IA et intégrée (desktop + mobile vérifiés).
 - Ancienne image gymnase conservée en secours dans public/hero-sports.png.
 
+---
+Task ID: 5
+Agent: main (Z.ai Code)
+Task: Intégrer le logo uploadé (remplacer le texte Zalspor), créer les pages « À propos » et « Le Concept », et supprimer toutes les autres catégités de sport (tennis, gym, basket…) — site 100% location de terrains de football à l'heure.
+
+Work Log:
+- Logo uploadé copié : upload/logo (2).webp → public/logo.webp (96×96, écusson « ZALFOOT », fond transparent, verts). Vérifié via VLM.
+- Nouveau composant brand.tsx (Brand : logo seul + sous-titre optionnel, zéro texte de marque).
+- Rebranding complet Zalspor → Zalfoot (visible) : header/footer landing, login, dashboard, toasts, e-mails démo (@zalfoot.com), métadonnées (title + favicon /logo.webp), clé localStorage zalfoot_token.
+- landing.tsx réécrite : SPA à 3 vues (accueil / concept / apropos) via state + goTo() avec scroll ; nav desktop + burger mobile + footer communs ; footer sticky conservé (mt-auto).
+  - Accueil : hero football uniquement (badge « Location de terrains de football à l'heure », stats dynamiques), section « Nos terrains de football » (icône Trophy, badge type supprimé), fonctionnement, CTA contact.
+  - Le Concept : 3 piliers (réservation 1 min, prix transparents, terrains prêts), « Pour qui ? » (4 cibles), tarifs à l'heure (cartes avec bouton Réserver), CTA.
+  - À propos : histoire (photo + stats), mission, valeurs (Simplicité/Transparence/Passion), contact + CTA.
+- Bug corrigé : présélection du terrain dans BookingDialog désormais appliquée à chaque ouverture (useEffect sur open/preselectedFacilityId).
+- Suppression des autres sports : seed réécrit (3 terrains FOOTBALL : A synthétique 11v11 15k, B naturel 11v11 12k, C five 5v5 8k ; 10 réservations + 6 événements foot), reseed exécuté.
+- types.ts : FACILITY_TYPE_LABELS réduit à FOOTBALL ; facilities-section : champ Type supprimé (FOOTBALL forcé), textes « terrain » ; API POST /api/facilities : VALID_TYPES = {FOOTBALL} (défaut automatique) ; labels « Installation » → « Terrain » partout (calendrier, réservations, overview).
+- Vérifications navigateur (agent-browser) : accueil (logo sans texte ZALSPOR, 3 terrains), navigation Concept + À propos (sections complètes validées par VLM), réservation publique end-to-end (présélection Terrain A, 409 sur conflit 18h-19h, 201 sur créneau libre 21h-22h, toast + référence), connexion admin@zalfoot.com/admin123 OK (dashboard : logo + « Dashboard administrateur », stats 11 résas/3 terrains/6 événements), dialogue « Ajouter un terrain » sans champ type (POST 201 testé, terrain test supprimé de la BD ensuite), mobile 375×812 (menu burger, Concept/À propres, aucune erreur console, footer en bas).
+- Lint : 0 erreur. dev.log : uniquement des 200/201 récents (erreurs UserShield/hero-sports = anciennes entrées du log cumulatif).
+
+Stage Summary:
+- ✅ Logo ZALFOOT intégré partout, texte Zalspor supprimé, onglet « Zalfoot — Location de terrains de football à l'heure ».
+- ✅ Pages « Le Concept » et « À propos » créées (vues SPA sur la route /) et validées desktop + mobile.
+- ✅ Site recentré 100% football à l'heure : 3 terrains en BD, création de terrain limitée au football, réservation testée de bout en bout.
+

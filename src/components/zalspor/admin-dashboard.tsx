@@ -9,13 +9,13 @@ import {
   LogOut,
   MapPin,
   ShieldCheck,
-  Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { apiFetch, setToken } from './api'
+import { Brand } from './brand'
 import type { Admin, CalendarEvent, Facility, Reservation, Stats } from './types'
 import { OverviewSection } from './overview-section'
 import { ReservationsSection } from './reservations-section'
@@ -29,7 +29,7 @@ const NAV_ITEMS: { id: DashboardSection; label: string; icon: typeof LayoutDashb
   { id: 'overview', label: 'Vue d’ensemble', icon: LayoutDashboard, mobileLabel: 'Vue' },
   { id: 'reservations', label: 'Réservations', icon: CalendarPlus, mobileLabel: 'Résas' },
   { id: 'calendar', label: 'Calendrier', icon: CalendarDays, mobileLabel: 'Agenda' },
-  { id: 'facilities', label: 'Terrains & salles', icon: MapPin, mobileLabel: 'Terrains' },
+  { id: 'facilities', label: 'Terrains', icon: MapPin, mobileLabel: 'Terrains' },
   { id: 'admins', label: 'Administrateurs', icon: ShieldCheck, mobileLabel: 'Admins' },
 ]
 
@@ -103,15 +103,7 @@ export function AdminDashboard({
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                <Zap className="size-5" />
-              </span>
-              <div className="leading-tight">
-                <p className="font-extrabold tracking-tight">
-                  ZAL<span className="text-primary">SPOR</span>
-                </p>
-                <p className="text-[11px] text-muted-foreground hidden sm:block">Dashboard administrateur</p>
-              </div>
+              <Brand size={40} subtitle="Dashboard administrateur" />
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
@@ -249,7 +241,7 @@ export function AdminDashboard({
 
       <footer className="mt-auto border-t bg-background py-4">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 text-center text-xs text-muted-foreground">
-          Zalspor Dashboard © {new Date().getFullYear()} — Réservations, calendrier et comptes administrateurs
+          Zalfoot Dashboard © {new Date().getFullYear()} — Terrains, réservations et comptes administrateurs
         </div>
       </footer>
     </div>

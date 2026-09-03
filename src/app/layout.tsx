@@ -14,12 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Zalspor — Réservations sportives",
+  title: "Zalfoot — Location de terrains de football à l'heure",
   description:
-    "Plateforme de réservation d'installations sportives : terrains de football, tennis, basket, padel, fitness et piscine. Dashboard admin complet.",
-  keywords: ["Zalspor", "réservation", "sport", "terrains", "dashboard"],
+    "Réservez votre terrain de football à l'heure à Dakar : disponibilités en temps réel, prix transparents, confirmation rapide. Dashboard admin complet.",
+  keywords: ["Zalfoot", "football", "terrain", "location", "réservation", "Dakar", "à l'heure"],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/logo.webp",
   },
 };
 

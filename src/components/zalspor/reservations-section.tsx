@@ -212,10 +212,10 @@ function AddReservationDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="res-facility">Installation *</Label>
+            <Label htmlFor="res-facility">Terrain *</Label>
             <Select value={form.facilityId} onValueChange={(v) => set({ facilityId: v })}>
               <SelectTrigger id="res-facility">
-                <SelectValue placeholder="Choisir un terrain / une salle" />
+                <SelectValue placeholder="Choisir un terrain" />
               </SelectTrigger>
               <SelectContent>
                 {facilities.map((f) => (
@@ -451,7 +451,7 @@ export function ReservationsSection({
                   <TableRow>
                     <TableHead className="min-w-[130px]">Référence</TableHead>
                     <TableHead>Client</TableHead>
-                    <TableHead className="hidden md:table-cell">Installation</TableHead>
+                    <TableHead className="hidden md:table-cell">Terrain</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead className="hidden sm:table-cell">Créneau</TableHead>
                     <TableHead>Statut</TableHead>

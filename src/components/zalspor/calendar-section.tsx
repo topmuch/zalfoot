@@ -176,7 +176,7 @@ function AddEventDialog({
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="ev-facility">Installation (optionnel)</Label>
+              <Label htmlFor="ev-facility">Terrain (optionnel)</Label>
               <Select value={form.facilityId} onValueChange={(v) => set({ facilityId: v })}>
                 <SelectTrigger id="ev-facility">
                   <SelectValue placeholder="Toutes / aucune" />

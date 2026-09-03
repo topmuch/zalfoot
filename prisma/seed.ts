@@ -12,7 +12,7 @@ function daysFromNow(n: number): string {
 }
 
 async function main() {
-  console.log('🌱 Seed Zalspor…')
+  console.log('🌱 Seed Zalfoot — terrains de football à l’heure…')
 
   // Purge
   await db.session.deleteMany()
@@ -25,7 +25,7 @@ async function main() {
   await db.admin.create({
     data: {
       name: 'Awa Diop',
-      email: 'admin@zalspor.com',
+      email: 'admin@zalfoot.com',
       passwordHash: hashPassword('admin123'),
       role: 'SUPER_ADMIN',
       phone: '+221 77 123 45 67',
@@ -35,64 +35,44 @@ async function main() {
   await db.admin.create({
     data: {
       name: 'Moussa Traoré',
-      email: 'moussa@zalspor.com',
-      passwordHash: hashPassword('zalspor123'),
+      email: 'moussa@zalfoot.com',
+      passwordHash: hashPassword('zalfoot123'),
       role: 'ADMIN',
       phone: '+221 76 987 65 43',
     },
   })
 
-  // Installations sportives
-  const facilities = await Promise.all(
+  // Terrains de football (uniquement — location à l'heure)
+  const [terrainA, terrainB, five] = await Promise.all(
     [
       {
-        name: 'Terrain de Football — ZALSPOR Arena',
+        name: 'Terrain A — Gazon synthétique 11v11',
         type: 'FOOTBALL',
-        description: 'Terrain en gazon synthétique dernière génération, éclairage nocturne, vestiaires.',
+        description:
+          'Grand terrain 11v11 en gazon synthétique dernière génération, éclairage nocturne, buts avec filets, vestiaires et douches.',
         pricePerHour: 15000,
         capacity: 22,
       },
       {
-        name: 'Court de Tennis n°1',
-        type: 'TENNIS',
-        description: 'Court en béton poreux (green set), filet réglementaire, raquettes en location.',
-        pricePerHour: 8000,
-        capacity: 4,
-      },
-      {
-        name: 'Gymnase Basket — Salle A',
-        type: 'BASKETBALL',
-        description: 'Parquet sportif homologué FIBA, 2 paniers, tribunes de 200 places.',
-        pricePerHour: 10000,
-        capacity: 14,
-      },
-      {
-        name: 'Padel Center — Court vitré',
-        type: 'PADEL',
-        description: 'Court vitré panoramique, gazon synthétique, location de palas.',
+        name: 'Terrain B — Gazon naturel 11v11',
+        type: 'FOOTBALL',
+        description:
+          'Pelouse naturelle entretenue, idéale pour les matchs amicaux et les entraînements d’équipe.',
         pricePerHour: 12000,
-        capacity: 4,
+        capacity: 22,
       },
       {
-        name: 'Salle de Fitness & Musculation',
-        type: 'GYM',
-        description: '150 m² équipés, coaching personnalisé, ouverte de 6h à 22h.',
-        pricePerHour: 5000,
-        capacity: 30,
-      },
-      {
-        name: 'Piscine Olympique 25 m',
-        type: 'PISCINE',
-        description: 'Bassin 6 couloirs chauffé, maître-nageur présent à chaque séance.',
-        pricePerHour: 6000,
-        capacity: 20,
+        name: 'Terrain C — Five 5v5 éclairé',
+        type: 'FOOTBALL',
+        description:
+          'Mini-terrain 5v5 en gazon synthétique, filets de hauteur, parfait pour les matchs entre amis le soir.',
+        pricePerHour: 8000,
+        capacity: 12,
       },
     ].map((data) => db.facility.create({ data })),
   )
 
   // Réservations d'exemple
-  const [football, tennis, basket, padel, gym, piscine] = facilities
-
   const reservationsData: Array<{
     customerName: string
     customerEmail?: string
@@ -105,17 +85,17 @@ async function main() {
     notes?: string
     source: string
   }> = [
-    { customerName: 'ASC Jaraaf', customerEmail: 'contact@jaraaf.sn', customerPhone: '+221 77 111 22 33', facilityId: football.id, date: daysFromNow(0), startTime: '18:00', endTime: '20:00', status: 'CONFIRMED', notes: 'Match amical de Ligue 1', source: 'PUBLIC' },
-    { customerName: 'Fatou Ndiaye', customerEmail: 'fatou.nd@gmail.com', customerPhone: '+221 78 222 33 44', facilityId: tennis.id, date: daysFromNow(0), startTime: '10:00', endTime: '11:00', status: 'CONFIRMED', source: 'PUBLIC' },
-    { customerName: 'Team Dakar Basket', customerPhone: '+221 77 333 44 55', facilityId: basket.id, date: daysFromNow(1), startTime: '19:00', endTime: '21:00', status: 'PENDING', notes: 'En attente du versement de l\'acompte', source: 'PUBLIC' },
-    { customerName: 'Ibrahima Sow', customerEmail: 'i.sow@outlook.com', facilityId: padel.id, date: daysFromNow(1), startTime: '17:00', endTime: '18:00', status: 'CONFIRMED', source: 'PUBLIC' },
-    { customerName: 'Groupe Fitness Matin', facilityId: gym.id, date: daysFromNow(2), startTime: '07:00', endTime: '08:00', status: 'CONFIRMED', notes: 'Cours collectif animé par le coach', source: 'ADMIN' },
-    { customerName: 'Club Natation Espoirs', customerEmail: 'natation@espoirs.sn', facilityId: piscine.id, date: daysFromNow(3), startTime: '16:00', endTime: '17:30', status: 'PENDING', source: 'PUBLIC' },
-    { customerName: 'Ousmane Ba', customerPhone: '+221 76 555 66 77', facilityId: football.id, date: daysFromNow(4), startTime: '20:00', endTime: '22:00', status: 'CONFIRMED', source: 'PUBLIC' },
-    { customerName: 'Coupe Padel Amis', facilityId: padel.id, date: daysFromNow(5), startTime: '14:00', endTime: '18:00', status: 'CONFIRMED', notes: 'Tournoi amateur 8 équipes', source: 'ADMIN' },
-    { customerName: 'Mariama Sy', customerEmail: 'm.sy@gmail.com', facilityId: tennis.id, date: daysFromNow(-1), startTime: '15:00', endTime: '16:00', status: 'CANCELLED', notes: 'Annulé par le client (météo)', source: 'PUBLIC' },
-    { customerName: 'Lycée Kennedy — EPS', customerEmail: 'eps@kennedy.edu', facilityId: basket.id, date: daysFromNow(-2), startTime: '09:00', endTime: '11:00', status: 'CONFIRMED', notes: 'Cours d\'EPS, facture mensuelle', source: 'ADMIN' },
-  ] as any[]
+    { customerName: 'ASC Jaraaf', customerEmail: 'contact@jaraaf.sn', customerPhone: '+221 77 111 22 33', facilityId: terrainA.id, date: daysFromNow(0), startTime: '18:00', endTime: '20:00', status: 'CONFIRMED', notes: 'Match amical de Ligue 1', source: 'PUBLIC' },
+    { customerName: 'Groupe des Yoff', customerPhone: '+221 78 222 33 44', facilityId: five.id, date: daysFromNow(0), startTime: '20:00', endTime: '21:00', status: 'CONFIRMED', notes: 'Five hebdomadaire entre voisins', source: 'PUBLIC' },
+    { customerName: 'Team Dakar United', customerPhone: '+221 77 333 44 55', facilityId: terrainA.id, date: daysFromNow(1), startTime: '19:00', endTime: '21:00', status: 'PENDING', notes: 'En attente du versement de l’acompte', source: 'PUBLIC' },
+    { customerName: 'Ibrahima Sow', customerEmail: 'i.sow@outlook.com', facilityId: terrainB.id, date: daysFromNow(1), startTime: '17:00', endTime: '18:00', status: 'CONFIRMED', source: 'PUBLIC' },
+    { customerName: 'FC Ouakam Espoirs', customerEmail: 'espoirs@ouakam.sn', facilityId: terrainB.id, date: daysFromNow(2), startTime: '16:30', endTime: '18:30', status: 'CONFIRMED', notes: 'Entraînement des U17', source: 'ADMIN' },
+    { customerName: 'Les amis de Parcelles', facilityId: five.id, date: daysFromNow(3), startTime: '21:00', endTime: '22:00', status: 'PENDING', source: 'PUBLIC' },
+    { customerName: 'Ousmane Ba', customerPhone: '+221 76 555 66 77', facilityId: terrainA.id, date: daysFromNow(4), startTime: '20:00', endTime: '22:00', status: 'CONFIRMED', source: 'PUBLIC' },
+    { customerName: 'Tournoi corporatif Sonatel', facilityId: terrainB.id, date: daysFromNow(5), startTime: '14:00', endTime: '18:00', status: 'CONFIRMED', notes: 'Tournoi inter-services, 4 équipes', source: 'ADMIN' },
+    { customerName: 'Mariama Sy', customerEmail: 'm.sy@gmail.com', facilityId: five.id, date: daysFromNow(-1), startTime: '19:00', endTime: '20:00', status: 'CANCELLED', notes: 'Annulé par le client (pluie)', source: 'PUBLIC' },
+    { customerName: 'Lycée Kennedy — EPS', customerEmail: 'eps@kennedy.edu', facilityId: terrainA.id, date: daysFromNow(-2), startTime: '09:00', endTime: '11:00', status: 'CONFIRMED', notes: 'Cours d’EPS, facture mensuelle', source: 'ADMIN' },
+  ]
 
   for (const r of reservationsData) {
     await db.reservation.create({ data: r })
@@ -123,12 +103,12 @@ async function main() {
 
   // Événements du calendrier
   const eventsData = [
-    { title: 'Entraînement FC Zalspor', description: 'Séance hebdomadaire de l\'équipe résidence.', type: 'ENTRAINEMENT', facilityId: football.id, date: daysFromNow(0), startTime: '08:00', endTime: '10:00' },
-    { title: 'Maintenance gazon synthétique', description: 'Brossage et remplissage granulats — terrain fermé.', type: 'MAINTENANCE', facilityId: football.id, date: daysFromNow(2), startTime: '06:00', endTime: '12:00' },
-    { title: 'Tournoi de Padel — Coupe Zalspor', description: 'Phase finale, 8 paires qualifiées. Public bienvenu.', type: 'EVENEMENT', facilityId: padel.id, date: daysFromNow(5), startTime: '14:00', endTime: '20:00' },
-    { title: 'Cours collectif Aquagym', description: 'Animation par notre maître-nageuse Aïssatou.', type: 'ENTRAINEMENT', facilityId: piscine.id, date: daysFromNow(1), startTime: '11:00', endTime: '12:00' },
-    { title: 'Ouverture exceptionnelle nuit', description: 'La salle de fitness est ouverte jusqu\'à minuit.', type: 'DISPONIBILITE', facilityId: gym.id, date: daysFromNow(3), startTime: '20:00', endTime: '23:59' },
-    { title: 'Stage détection jeunes', description: 'Détection U15 en partenariat avec la fédération.', type: 'EVENEMENT', facilityId: basket.id, date: daysFromNow(7), startTime: '09:00', endTime: '16:00' },
+    { title: 'Entraînement FC Zalfoot', description: 'Séance hebdomadaire de l’équipe résidence.', type: 'ENTRAINEMENT', facilityId: terrainA.id, date: daysFromNow(0), startTime: '08:00', endTime: '10:00' },
+    { title: 'Maintenance gazon — Terrain B', description: 'Tonte et regarnissage : terrain fermé le matin.', type: 'MAINTENANCE', facilityId: terrainB.id, date: daysFromNow(2), startTime: '06:00', endTime: '12:00' },
+    { title: 'Tournoi amical du week-end', description: 'Phase finale du tournoi amical 8 équipes. Public bienvenu.', type: 'EVENEMENT', facilityId: terrainA.id, date: daysFromNow(5), startTime: '14:00', endTime: '20:00' },
+    { title: 'Stage détection jeunes U15', description: 'Détection en partenariat avec la fédération régionale.', type: 'EVENEMENT', facilityId: terrainB.id, date: daysFromNow(7), startTime: '09:00', endTime: '16:00' },
+    { title: 'Nuit du five', description: 'Le terrain C reste ouvert jusqu’à 23 h pour les nocturnes.', type: 'DISPONIBILITE', facilityId: five.id, date: daysFromNow(3), startTime: '20:00', endTime: '23:00' },
+    { title: 'Match reporté — Integrales', description: 'Créneau bloqué pour un match de championnat reporté.', type: 'EVENEMENT', facilityId: terrainA.id, date: daysFromNow(1), startTime: '15:00', endTime: '17:00' },
   ]
 
   for (const e of eventsData) {
@@ -142,7 +122,7 @@ async function main() {
     events: await db.calendarEvent.count(),
   }
   console.log('✅ Seed terminé :', counts)
-  console.log('👤 Admin de démo : admin@zalspor.com / admin123')
+  console.log('👤 Admin de démo : admin@zalfoot.com / admin123')
 }
 
 main()

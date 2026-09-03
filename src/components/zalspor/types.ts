@@ -1,4 +1,4 @@
-// Types partagés de l'application Zalspor
+// Types partagés de l'application Zalfoot
 
 export type Facility = {
   id: string
@@ -67,12 +67,6 @@ export type Stats = {
 
 export const FACILITY_TYPE_LABELS: Record<string, string> = {
   FOOTBALL: 'Football',
-  TENNIS: 'Tennis',
-  BASKETBALL: 'Basketball',
-  PADEL: 'Padel',
-  GYM: 'Fitness',
-  PISCINE: 'Natation',
-  MULTISPORT: 'Multisport',
 }
 
 export const EVENT_TYPE_META: Record<string, { label: string; dot: string; pill: string }> = {

@@ -8,7 +8,7 @@ export class ApiError extends Error {
   }
 }
 
-const TOKEN_KEY = 'zalspor_token'
+const TOKEN_KEY = 'zalfoot_token'
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null

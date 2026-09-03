@@ -2,15 +2,8 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { getAuthAdmin } from '@/lib/auth'
 
-const VALID_TYPES = new Set([
-  'FOOTBALL',
-  'TENNIS',
-  'BASKETBALL',
-  'PADEL',
-  'GYM',
-  'PISCINE',
-  'MULTISPORT',
-])
+// Zalfoot ne gère que la location de terrains de football à l'heure.
+const VALID_TYPES = new Set(['FOOTBALL'])
 
 /** GET /api/facilities — liste publique des installations. */
 export async function GET() {
@@ -42,7 +35,7 @@ export async function POST(request: NextRequest) {
   }
 
   const name = typeof body.name === 'string' ? body.name.trim() : ''
-  const typeInput = typeof body.type === 'string' ? body.type.toUpperCase() : ''
+  const typeInput = (typeof body.type === 'string' ? body.type.toUpperCase() : '') || 'FOOTBALL'
   const description =
     typeof body.description === 'string' && body.description.trim() ? body.description.trim() : null
   const pricePerHour = Number(body.pricePerHour)
@@ -52,7 +45,10 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Le nom est requis (3 caractères minimum).' }, { status: 400 })
   }
   if (!VALID_TYPES.has(typeInput)) {
-    return Response.json({ error: 'Type d’installation invalide.' }, { status: 400 })
+    return Response.json(
+      { error: 'Seuls les terrains de football sont gérés par Zalfoot.' },
+      { status: 400 },
+    )
   }
   if (!Number.isFinite(pricePerHour) || pricePerHour < 0) {
     return Response.json({ error: 'Tarif horaire invalide.' }, { status: 400 })

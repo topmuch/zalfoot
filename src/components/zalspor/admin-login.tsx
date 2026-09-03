@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, Eye, EyeOff, Loader2, Lock, LogIn, Mail, ShieldCheck, Zap } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Loader2, Lock, LogIn, Mail, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { apiFetch, ApiError, setToken } from './api'
+import { Brand } from './brand'
 import type { Admin } from './types'
 
 export function AdminLogin({
@@ -35,7 +36,7 @@ export function AdminLogin({
       setToken(result.token)
       toast({
         title: `Bienvenue, ${result.admin.name.split(' ')[0]} 👋`,
-        description: 'Connexion réussie au dashboard Zalspor.',
+        description: 'Connexion réussie au dashboard Zalfoot.',
       })
       onSuccess(result.admin)
     } catch (error) {
@@ -51,12 +52,7 @@ export function AdminLogin({
       <header className="border-b bg-background/85 backdrop-blur">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Zap className="size-5" />
-            </span>
-            <span className="text-xl font-extrabold tracking-tight">
-              ZAL<span className="text-primary">SPOR</span>
-            </span>
+            <Brand size={40} />
           </div>
           <Button variant="ghost" size="sm" onClick={onBack}>
             <ArrowLeft className="size-4" />
@@ -83,7 +79,7 @@ export function AdminLogin({
                   <Input
                     id="login-email"
                     type="email"
-                    placeholder="admin@zalspor.com"
+                    placeholder="admin@zalfoot.com"
                     className="pl-9"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -129,7 +125,7 @@ export function AdminLogin({
                 <Lock className="size-4" /> Compte de démonstration
               </p>
               <p className="mt-1 text-muted-foreground">
-                E-mail : <code className="font-mono text-foreground">admin@zalspor.com</code>
+                E-mail : <code className="font-mono text-foreground">admin@zalfoot.com</code>
                 <br />
                 Mot de passe : <code className="font-mono text-foreground">admin123</code>
               </p>
@@ -139,7 +135,7 @@ export function AdminLogin({
       </main>
 
       <footer className="border-t bg-background/60 py-4 text-center text-xs text-muted-foreground">
-        Zalspor © {new Date().getFullYear()} — Plateforme de réservations sportives
+        Zalfoot © {new Date().getFullYear()} — Location de terrains de football à l&apos;heure
       </footer>
     </div>
   )

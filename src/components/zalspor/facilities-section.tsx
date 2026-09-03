@@ -2,17 +2,11 @@
 
 import { useState } from 'react'
 import {
-  Activity,
-  Dumbbell,
-  Flame,
-  Footprints,
   Loader2,
   Plus,
   Power,
   Trophy,
   Users,
-  Waves,
-  Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,30 +22,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { apiFetch, ApiError } from './api'
-import { FACILITY_TYPE_LABELS, formatPrice, type Facility } from './types'
-
-const FACILITY_ICONS: Record<string, typeof Trophy> = {
-  FOOTBALL: Trophy,
-  TENNIS: Activity,
-  BASKETBALL: Flame,
-  PADEL: Zap,
-  GYM: Dumbbell,
-  PISCINE: Waves,
-  MULTISPORT: Footprints,
-}
+import { formatPrice, type Facility } from './types'
 
 type NewFacilityForm = {
   name: string
-  type: string
   description: string
   pricePerHour: string
   capacity: string
@@ -69,10 +45,9 @@ function AddFacilityDialog({
   const { toast } = useToast()
   const [form, setForm] = useState<NewFacilityForm>({
     name: '',
-    type: 'MULTISPORT',
     description: '',
     pricePerHour: '10000',
-    capacity: '10',
+    capacity: '14',
   })
   const [submitting, setSubmitting] = useState(false)
   const set = (patch: Partial<NewFacilityForm>) => setForm((prev) => ({ ...prev, ...patch }))
@@ -89,13 +64,13 @@ function AddFacilityDialog({
         auth: true,
         body: {
           name: form.name.trim(),
-          type: form.type,
+          type: 'FOOTBALL',
           description: form.description.trim() || null,
           pricePerHour: Number(form.pricePerHour),
           capacity: Number(form.capacity),
         },
       })
-      toast({ title: 'Installation créée ✅', description: `${result.facility.name} est disponible à la réservation.` })
+      toast({ title: 'Terrain créé ✅', description: `${result.facility.name} est disponible à la réservation.` })
       set({ name: '', description: '' })
       onCreated()
       onOpenChange(false)
@@ -116,48 +91,31 @@ function AddFacilityDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Plus className="size-5 text-primary" />
-            Ajouter une installation
+            Ajouter un terrain
           </DialogTitle>
-          <DialogDescription>Un nouveau terrain ou une nouvelle salle réservable.</DialogDescription>
+          <DialogDescription>Un nouveau terrain de football réservable à l&apos;heure.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="fac-name">Nom *</Label>
             <Input
               id="fac-name"
-              placeholder="Ex. Court de tennis n°2"
+              placeholder="Ex. Terrain D — gazon synthétique"
               value={form.name}
               onChange={(e) => set({ name: e.target.value })}
               required
               minLength={3}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <Label htmlFor="fac-type">Type</Label>
-              <Select value={form.type} onValueChange={(v) => set({ type: v })}>
-                <SelectTrigger id="fac-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(FACILITY_TYPE_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="fac-capacity">Capacité</Label>
-              <Input
-                id="fac-capacity"
-                type="number"
-                min={1}
-                value={form.capacity}
-                onChange={(e) => set({ capacity: e.target.value })}
-              />
-            </div>
+          <div className="grid gap-2">
+            <Label htmlFor="fac-capacity">Capacité (joueurs)</Label>
+            <Input
+              id="fac-capacity"
+              type="number"
+              min={1}
+              value={form.capacity}
+              onChange={(e) => set({ capacity: e.target.value })}
+            />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="fac-price">Tarif horaire (FCFA) *</Label>
@@ -186,7 +144,7 @@ function AddFacilityDialog({
             </Button>
             <Button type="submit" disabled={!canSubmit || submitting}>
               {submitting ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-              Créer l&apos;installation
+              Créer le terrain
             </Button>
           </DialogFooter>
         </form>
@@ -219,7 +177,7 @@ export function FacilitiesSection({
         body: { active: !facility.active },
       })
       toast({
-        title: facility.active ? 'Installation désactivée' : 'Installation réactivée',
+        title: facility.active ? 'Terrain désactivé' : 'Terrain réactivé',
         description: facility.name,
       })
       onRefresh()
@@ -239,60 +197,57 @@ export function FacilitiesSection({
     <div className="flex flex-col gap-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-extrabold tracking-tight">Terrains & salles</h2>
+          <h2 className="text-2xl font-extrabold tracking-tight">Terrains de football</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {facilities.filter((f) => f.active).length} actives sur {facilities.length}
+            {facilities.filter((f) => f.active).length} actifs sur {facilities.length}
           </p>
         </div>
         <Button onClick={() => setAddOpen(true)} size="lg" className="shadow-sm">
           <Plus className="size-4" />
-          Ajouter une installation
+          Ajouter un terrain
         </Button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-16 text-muted-foreground">
           <Loader2 className="size-6 animate-spin mr-2" />
-          Chargement des installations…
+          Chargement des terrains…
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-h-[560px] overflow-y-auto zalspor-scroll pr-1">
-          {facilities.map((f) => {
-            const Icon = FACILITY_ICONS[f.type] ?? Trophy
-            return (
-              <Card key={f.id} className={busyId === f.id ? 'opacity-50' : undefined}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <Icon className="size-5" />
-                    </span>
-                    <Badge variant={f.active ? 'secondary' : 'destructive'}>
-                      {f.active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-base leading-snug mt-2">{f.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="pb-4">
-                  <p className="text-xs text-muted-foreground line-clamp-2 min-h-8">{f.description}</p>
-                  <div className="flex items-center justify-between mt-3 text-sm">
-                    <span className="font-semibold">{formatPrice(f.pricePerHour)}/h</span>
-                    <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                      <Users className="size-3.5" /> {f.capacity} pers.
-                    </span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-3"
-                    onClick={() => toggleActive(f)}
-                  >
-                    <Power className="size-4" />
-                    {f.active ? 'Désactiver' : 'Réactiver'}
-                  </Button>
-                </CardContent>
-              </Card>
-            )
-          })}
+          {facilities.map((f) => (
+            <Card key={f.id} className={busyId === f.id ? 'opacity-50' : undefined}>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Trophy className="size-5" />
+                  </span>
+                  <Badge variant={f.active ? 'secondary' : 'destructive'}>
+                    {f.active ? 'Actif' : 'Inactif'}
+                  </Badge>
+                </div>
+                <CardTitle className="text-base leading-snug mt-2">{f.name}</CardTitle>
+              </CardHeader>
+              <CardContent className="pb-4">
+                <p className="text-xs text-muted-foreground line-clamp-2 min-h-8">{f.description}</p>
+                <div className="flex items-center justify-between mt-3 text-sm">
+                  <span className="font-semibold">{formatPrice(f.pricePerHour)}/h</span>
+                  <span className="text-muted-foreground flex items-center gap-1 text-xs">
+                    <Users className="size-3.5" /> {f.capacity} joueurs
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-3"
+                  onClick={() => toggleActive(f)}
+                >
+                  <Power className="size-4" />
+                  {f.active ? 'Désactiver' : 'Réactiver'}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 

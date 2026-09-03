@@ -194,7 +194,7 @@ function CreateAdminDialog({
                 <Input
                   id="admin-email"
                   type="email"
-                  placeholder="nouveau.admin@zalspor.com"
+                  placeholder="nouveau.admin@zalfoot.com"
                   className={`pl-9 ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   value={form.email}
                   onChange={(e) => set({ email: e.target.value })}
@@ -390,7 +390,7 @@ export function AdminsSection({
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Comptes existants</CardTitle>
-          <CardDescription>Gérez les accès à l&apos;espace d&apos;administration Zalspor.</CardDescription>
+          <CardDescription>Gérez les accès à l&apos;espace d&apos;administration Zalfoot.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (

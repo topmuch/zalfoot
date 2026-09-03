@@ -72,7 +72,7 @@ export function OverviewSection({
       action: onGoToCalendar,
     },
     {
-      title: 'Installations actives',
+      title: 'Terrains actifs',
       value: stats?.activeFacilities ?? 0,
       icon: TrendingUp,
       hint: `${facilities.length} au total`,
@@ -99,7 +99,7 @@ export function OverviewSection({
           Bonjour {currentAdmin.name.split(' ')[0]} 👋
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Voici l&apos;activité du complexe sportif Zalspor.
+          Voici l&apos;activité de Zalfoot — location de terrains de football à l&apos;heure.
         </p>
       </div>
 
