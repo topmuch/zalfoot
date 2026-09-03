@@ -76,6 +76,26 @@ export type PublicSettings = {
   wavePaymentLink: string | null
 }
 
+/** Réservation affichée sur le calendrier public (aucune donnée sensible). */
+export type PublicReservation = {
+  id: string
+  reference: string
+  customerName: string
+  date: string
+  startTime: string
+  endTime: string // "00:00" = minuit
+  status: 'PENDING' | 'CONFIRMED'
+  paymentStatus: string
+  facilityName: string
+  live: boolean // true = créneau en cours en ce moment (heure de Dakar)
+}
+
+/** Réponse de /api/reservations/public */
+export type PublicCalendarData = {
+  reservations: PublicReservation[]
+  now: { date: string; minutes: number }
+}
+
 /** Disponibilité d'un jour : créneaux 08:00 → 00:00 */
 export type AvailabilitySlot = {
   start: string

@@ -8,13 +8,16 @@ import {
   CalendarCheck,
   Clock,
   Flame,
+  Goal,
   GraduationCap,
   Heart,
-  Mail,
   MapPin,
+  Moon,
   Phone,
   ShieldCheck,
+  Shirt,
   Sparkles,
+  Sprout,
   Target,
   Trophy,
   Users,
@@ -27,20 +30,40 @@ import { Badge } from '@/components/ui/badge'
 import { formatPrice, type Facility } from './types'
 import { Brand } from './brand'
 import { ReservationPage } from './reservation-page'
+import { HorairesPage } from './horaires-page'
+import { CalendrierPage } from './calendrier-page'
+import { ContactPage } from './contact-page'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0 },
 }
 
-type PublicPage = 'accueil' | 'concept' | 'apropos' | 'reserver'
+type PublicPage =
+  | 'accueil'
+  | 'horaires'
+  | 'calendrier'
+  | 'concept'
+  | 'apropos'
+  | 'contact'
+  | 'reserver'
 
 const NAV_LINKS: { page: PublicPage; anchor?: string; label: string }[] = [
   { page: 'accueil', anchor: 'installations', label: 'Terrains' },
+  { page: 'horaires', label: 'Horaires & Tarifs' },
+  { page: 'calendrier', label: 'Calendrier' },
   { page: 'concept', label: 'Le Concept' },
   { page: 'apropos', label: 'À propos' },
-  { page: 'accueil', anchor: 'contact', label: 'Contact' },
+  { page: 'contact', label: 'Contact' },
 ]
+
+/** Coordonnées du complexe (page Contact + pied de page). */
+const CONTACT = {
+  name: 'Zalfoot',
+  address: 'Croisement Kaolack - Mbour, Sénégal',
+  phone: '+221 78 278 49 49',
+  phoneHref: 'tel:+221782784949',
+}
 
 export function Landing({
   facilities,
@@ -86,7 +109,7 @@ export function Landing({
               <Brand size={80} />
             </button>
 
-            <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+            <nav className="hidden lg:flex items-center gap-4 text-sm font-medium text-muted-foreground">
               {NAV_LINKS.map((link) => (
                 <button
                   key={link.label}
@@ -100,7 +123,7 @@ export function Landing({
             </nav>
 
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={onOpenAdmin}>
+              <Button variant="outline" size="sm" className="hidden xl:inline-flex" onClick={onOpenAdmin}>
                 <ShieldCheck className="size-4" />
                 Espace admin
               </Button>
@@ -111,7 +134,7 @@ export function Landing({
               <Button
                 variant="ghost"
                 size="icon"
-                className="md:hidden"
+                className="lg:hidden"
                 aria-label="Menu"
                 onClick={() => setNavOpen((v) => !v)}
               >
@@ -120,7 +143,7 @@ export function Landing({
             </div>
           </div>
           {navOpen && (
-            <nav className="md:hidden pb-3 flex flex-col gap-1 text-sm">
+            <nav className="lg:hidden pb-3 flex flex-col gap-1 text-sm">
               {NAV_LINKS.map((link) => (
                 <button
                   key={link.label}
@@ -182,8 +205,9 @@ export function Landing({
                       Réservez votre <span className="text-primary">terrain de football</span> en quelques clics.
                     </h1>
                     <p className="text-lg text-muted-foreground max-w-xl">
-                      Gazon entretenu, éclairage nocturne, vestiaires : consultez les disponibilités en temps
-                      réel et bloquez votre heure de foot en moins d&apos;une minute.
+                      Gazon synthétique entretenu, éclairage nocturne, vestiaires : consultez les
+                      disponibilités en temps réel et bloquez votre heure de foot en moins d&apos;une
+                      minute.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3">
                       <Button size="lg" className="h-12 text-base" onClick={() => openBooking()}>
@@ -252,15 +276,66 @@ export function Landing({
                   <div>
                     <h2 className="text-3xl font-extrabold tracking-tight">Nos terrains de football</h2>
                     <p className="text-muted-foreground mt-2 max-w-2xl">
-                      Pelouses entretenues quotidiennement, buts avec filets, vestiaires et éclairage
-                      nocturne. Ouverts de 8 h à minuit, 7 jours sur 7.
+                      Du gazon synthétique, tout simplement. Surface stable par tous les temps,
+                      entretenu quotidiennement, propre même en saison des pluies.
                     </p>
                   </div>
                   <Badge variant="outline" className="w-fit gap-1.5">
-                    <MapPin className="size-3.5" /> Route de l&apos;Aéroport, Dakar
+                    <MapPin className="size-3.5" /> {CONTACT.address}
                   </Badge>
                 </div>
 
+                {/* Bannière gazon synthétique */}
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: '-50px' }}
+                  variants={fadeInUp}
+                  transition={{ duration: 0.4 }}
+                  className="relative rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5 mb-6"
+                >
+                  <div className="relative aspect-[2/1] sm:aspect-[5/2]">
+                    <Image
+                      src="/gazon-synthetique.png"
+                      alt="Gazon synthétique dernière génération des terrains de football Zalfoot"
+                      fill
+                      sizes="100vw"
+                      loading="eager"
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    <div className="text-white max-w-xl">
+                      <Badge className="gap-1.5 bg-emerald-500 hover:bg-emerald-500 text-white border-0">
+                        <Sprout className="size-3.5" /> 100 % gazon synthétique
+                      </Badge>
+                      <p className="text-xl sm:text-2xl font-extrabold mt-3 leading-tight">
+                        Le plaisir du jeu, sur une surface toujours propre et stable.
+                      </p>
+                      <p className="text-sm text-white/85 mt-1.5">
+                        Fibres dernière génération et drainage rapide : le terrain est prêt, quelle
+                        que soit la météo.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 shrink-0">
+                      {[
+                        { icon: Moon, label: 'Éclairage nocturne' },
+                        { icon: Goal, label: 'Buts avec filets' },
+                        { icon: Shirt, label: 'Vestiaires & douches' },
+                      ].map((c) => (
+                        <span
+                          key={c.label}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-3 py-1.5 text-xs font-medium text-white"
+                        >
+                          <c.icon className="size-3.5" /> {c.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Cartes terrains */}
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {facilities.map((f, i) => (
                     <motion.div
@@ -273,9 +348,14 @@ export function Landing({
                     >
                       <Card className="h-full flex flex-col overflow-hidden hover:shadow-lg hover:border-primary/40 transition-all group">
                         <CardHeader className="pb-3">
-                          <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                            <Trophy className="size-6" />
-                          </span>
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                              <Sprout className="size-6" />
+                            </span>
+                            <Badge variant="secondary" className="gap-1.5 shrink-0 mt-0.5">
+                              <Sprout className="size-3" /> Gazon synthétique
+                            </Badge>
+                          </div>
                           <h3 className="text-lg font-bold leading-snug mt-3">{f.name}</h3>
                         </CardHeader>
                         <CardContent className="pb-3 flex-1">
@@ -347,7 +427,8 @@ export function Landing({
                     <div>
                       <h2 className="text-2xl sm:text-3xl font-extrabold">Prêt à jouer ce week-end ?</h2>
                       <p className="mt-2 text-primary-foreground/85 max-w-lg">
-                        Réservez votre heure de foot en ligne maintenant, ou appelez-nous 7 j/7 de 8 h à 20 h.
+                        Réservez votre heure de foot en ligne maintenant, ou appelez-nous 7 j/7 de
+                        8 h à minuit.
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -355,10 +436,13 @@ export function Landing({
                         <CalendarCheck className="size-5" />
                         Réserver maintenant
                       </Button>
-                      <div className="flex flex-col gap-1 text-sm text-primary-foreground/90 pl-1">
-                        <span className="flex items-center gap-2"><Phone className="size-4" /> +221 33 800 00 00</span>
-                        <span className="flex items-center gap-2"><Mail className="size-4" /> contact@zalfoot.com</span>
-                      </div>
+                      <a
+                        href={CONTACT.phoneHref}
+                        className="inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-primary-foreground/30 bg-primary-foreground/10 px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/20 cursor-pointer"
+                      >
+                        <Phone className="size-4" />
+                        {CONTACT.phone}
+                      </a>
                     </div>
                   </CardContent>
                 </Card>
@@ -547,9 +631,9 @@ export function Landing({
                     Zalfoot, <span className="text-primary">le foot d&apos;abord.</span>
                   </h1>
                   <p className="text-lg text-muted-foreground mt-5 max-w-2xl">
-                    Née de la passion du ballon à Dakar, Zalfoot met la location de terrains de football
-                    à portée de clic, pour que l&apos;envie de jouer ne dépende plus jamais d&apos;un coup de
-                    fil compliqué.
+                    Née de la passion du ballon entre Kaolack et Mbour, Zalfoot met la location de
+                    terrains de football à portée de clic, pour que l&apos;envie de jouer ne dépende
+                    plus jamais d&apos;un coup de fil compliqué.
                   </p>
                 </div>
               </div>
@@ -573,9 +657,9 @@ export function Landing({
                     <h2 className="text-3xl font-extrabold tracking-tight">Notre histoire</h2>
                     <div className="mt-4 flex flex-col gap-4 text-muted-foreground">
                       <p>
-                        Zalfoot est partie d&apos;un constat simple : à Dakar, trouver un terrain de
-                        football au bon créneau relevait souvent du parcours du combattant — appels,
-                        allers-retours, créneaux doubles…
+                        Zalfoot est partie d&apos;un constat simple : entre Kaolack et Mbour, trouver un
+                        terrain de football au bon créneau relevait souvent du parcours du
+                        combattant — appels, allers-retours, créneaux doubles…
                       </p>
                       <p>
                         Nous avons donc construit une plateforme qui fait une seule chose :
@@ -653,9 +737,9 @@ export function Landing({
                 </p>
                 <div className="grid gap-5 sm:grid-cols-3 mt-10 max-w-4xl mx-auto">
                   {[
-                    { icon: MapPin, t: 'Adresse', d: 'Route de l’Aéroport, Dakar, Sénégal' },
-                    { icon: Phone, t: 'Téléphone', d: '+221 33 800 00 00' },
-                    { icon: Mail, t: 'E-mail', d: 'contact@zalfoot.com' },
+                    { icon: MapPin, t: 'Adresse', d: CONTACT.address },
+                    { icon: Phone, t: 'Téléphone', d: CONTACT.phone },
+                    { icon: Clock, t: 'Horaires', d: '7 j/7 · 08:00 → 00:00' },
                   ].map((c) => (
                     <Card key={c.t} className="text-center">
                       <CardContent className="pt-6 flex flex-col items-center gap-2">
@@ -678,6 +762,18 @@ export function Landing({
             </section>
           </motion.div>
         )}
+        {page === 'horaires' && (
+          <HorairesPage
+            facilities={facilities}
+            onReserve={() => openBooking()}
+            onOpenCalendar={() => goTo('calendrier')}
+          />
+        )}
+
+        {page === 'calendrier' && <CalendrierPage onReserve={() => openBooking()} />}
+
+        {page === 'contact' && <ContactPage onReserve={() => openBooking()} />}
+
         {page === 'reserver' && (
           <ReservationPage
             facilities={facilities.filter((f) => f.active)}
@@ -694,7 +790,7 @@ export function Landing({
             <Brand size={56} />
             <span>© {new Date().getFullYear()}</span>
           </div>
-          <nav className="flex items-center gap-4">
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             {NAV_LINKS.map((link) => (
               <button
                 key={link.label}
@@ -706,7 +802,15 @@ export function Landing({
               </button>
             ))}
           </nav>
-          <p>Location de terrains de football à l&apos;heure — Dakar, Sénégal</p>
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+            <a
+              href={CONTACT.phoneHref}
+              className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+            >
+              <Phone className="size-3.5" /> {CONTACT.phone}
+            </a>
+            <p>Location de terrains de football à l&apos;heure — {CONTACT.address}</p>
+          </div>
         </div>
       </footer>
     </div>

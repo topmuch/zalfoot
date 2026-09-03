@@ -328,9 +328,13 @@ export function ReservationPage({
                   <Clock className="size-3.5" /> 25 000 FCFA / heure
                 </Badge>
                 <Badge variant="outline" className="gap-1.5 bg-[#00A0E7]/5 border-[#00A0E7]/30 text-[#0090D2] dark:text-[#4DC3F0]">
-                  <span className="flex size-3.5 items-center justify-center rounded-[4px] bg-white ring-1 ring-black/10 overflow-hidden">
-                    <Image src="/wave-logo.png" alt="" width={14} height={14} />
-                  </span>
+                  <Image
+                    src="/wave-brand.png"
+                    alt="Wave"
+                    width={332}
+                    height={419}
+                    className="h-4 w-auto rounded-[4px]"
+                  />
                   Acompte {formatPrice(DEPOSIT_PER_HOUR)}/h via Wave
                 </Badge>
                 <Badge variant="outline" className="gap-1.5">
@@ -751,15 +755,13 @@ export function ReservationPage({
                     </div>
 
                     <div className="rounded-xl border border-[#00A0E7]/30 bg-[#00A0E7]/[0.04] px-4 py-3 flex items-start gap-3">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-black/5 overflow-hidden">
-                        <Image
-                          src="/wave-logo.png"
-                          alt="Wave"
-                          width={26}
-                          height={26}
-                          className="rounded-md"
-                        />
-                      </span>
+                      <Image
+                        src="/wave-brand.png"
+                        alt="Wave"
+                        width={332}
+                        height={419}
+                        className="h-[43px] w-auto rounded-lg shrink-0 shadow-sm"
+                      />
                       <p className="text-sm text-muted-foreground leading-relaxed">
                         Après validation, votre créneau est <strong className="text-foreground">bloqué</strong>{' '}
                         et vous payez l&apos;acompte de{' '}
@@ -822,15 +824,13 @@ export function ReservationPage({
                   <div className="rounded-2xl border border-[#00A0E7]/30 bg-[#00A0E7]/[0.04] p-5 grid gap-4">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5 overflow-hidden">
-                          <Image
-                            src="/wave-logo.png"
-                            alt="Icône de paiement Wave"
-                            width={40}
-                            height={40}
-                            className="rounded-lg"
-                          />
-                        </span>
+                        <Image
+                          src="/wave-brand.png"
+                          alt="Icône de paiement Wave"
+                          width={332}
+                          height={419}
+                          className="h-16 w-auto rounded-xl shrink-0 shadow-sm"
+                        />
                         <div className="min-w-0">
                           <p className="font-bold">Acompte à payer avec Wave</p>
                           <p className="text-xs text-muted-foreground">
@@ -851,9 +851,13 @@ export function ReservationPage({
                           className="h-12 text-base bg-[#00A0E7] hover:bg-[#0090D2] text-white"
                           onClick={payWithWave}
                         >
-                          <span className="flex size-7 items-center justify-center rounded-md bg-white overflow-hidden shrink-0">
-                            <Image src="/wave-logo.png" alt="" width={22} height={22} className="rounded-[4px]" />
-                          </span>
+                          <Image
+                            src="/wave-brand.png"
+                            alt=""
+                            width={332}
+                            height={419}
+                            className="h-7 w-auto rounded-[5px] shrink-0"
+                          />
                           Payer {formatPrice(depositToPay)} avec Wave
                         </Button>
                         <p className="text-xs text-muted-foreground text-center leading-relaxed">

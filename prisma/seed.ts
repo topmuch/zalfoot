@@ -43,30 +43,30 @@ async function main() {
     },
   })
 
-  // Terrains de football (uniquement — location à l'heure : 25 000 FCFA/h)
+  // Terrains de football — 100 % gazon synthétique (location à l'heure : 25 000 FCFA/h)
   const [terrainA, terrainB, five] = await Promise.all(
     [
       {
         name: 'Terrain A — Gazon synthétique 11v11',
         type: 'FOOTBALL',
         description:
-          'Grand terrain 11v11 en gazon synthétique dernière génération, éclairage nocturne, buts avec filets, vestiaires et douches.',
+          'Grand terrain 11v11 en gazon synthétique dernière génération : surface stable par tous les temps, éclairage nocturne, buts avec filets, vestiaires et douches.',
         pricePerHour: 25000,
         capacity: 22,
       },
       {
-        name: 'Terrain B — Gazon naturel 11v11',
+        name: 'Terrain B — Gazon synthétique 11v11',
         type: 'FOOTBALL',
         description:
-          'Pelouse naturelle entretenue, idéale pour les matchs amicaux et les entraînements d’équipe.',
+          'Grand terrain 11v11 en gazon synthétique dernière génération : drainage rapide, jeu propre même en saison des pluies, buts avec filets et éclairage nocturne.',
         pricePerHour: 25000,
         capacity: 22,
       },
       {
-        name: 'Terrain C — Five 5v5 éclairé',
+        name: 'Terrain C — Gazon synthétique 5v5',
         type: 'FOOTBALL',
         description:
-          'Mini-terrain 5v5 en gazon synthétique, filets de hauteur, parfait pour les matchs entre amis le soir.',
+          'Mini-terrain 5v5 en gazon synthétique dernière génération, filets de hauteur, éclairage nocturne — parfait pour les matchs entre amis le soir.',
         pricePerHour: 25000,
         capacity: 12,
       },
@@ -117,7 +117,7 @@ async function main() {
   // Événements du calendrier
   const eventsData = [
     { title: 'Entraînement FC Zalfoot', description: 'Séance hebdomadaire de l’équipe résidence.', type: 'ENTRAINEMENT', facilityId: terrainA.id, date: daysFromNow(0), startTime: '08:00', endTime: '10:00' },
-    { title: 'Maintenance gazon — Terrain B', description: 'Tonte et regarnissage : terrain fermé le matin.', type: 'MAINTENANCE', facilityId: terrainB.id, date: daysFromNow(2), startTime: '06:00', endTime: '12:00' },
+    { title: 'Maintenance gazon — Terrain B', description: 'Brossage et désinfection des fibres du gazon synthétique : terrain fermé le matin.', type: 'MAINTENANCE', facilityId: terrainB.id, date: daysFromNow(2), startTime: '06:00', endTime: '12:00' },
     { title: 'Tournoi amical du week-end', description: 'Phase finale du tournoi amical 8 équipes. Public bienvenu.', type: 'EVENEMENT', facilityId: terrainA.id, date: daysFromNow(5), startTime: '14:00', endTime: '20:00' },
     { title: 'Stage détection jeunes U15', description: 'Détection en partenariat avec la fédération régionale.', type: 'EVENEMENT', facilityId: terrainB.id, date: daysFromNow(7), startTime: '09:00', endTime: '16:00' },
     { title: 'Nuit du five', description: 'Le terrain C reste ouvert jusqu’à 23 h pour les nocturnes.', type: 'DISPONIBILITE', facilityId: five.id, date: daysFromNow(3), startTime: '20:00', endTime: '23:00' },

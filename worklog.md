@@ -172,3 +172,30 @@ Stage Summary:
 - ✅ Lien Wave Business réel intégré et configuré en BD : https://pay.wave.com/m/M_sn_if40h6RgxkCj/c/sn/?amount={amount} — pour 1 h, ouvre exactement le lien fourni (amount=5000) ; vérifié sur la vraie page Wave (QR code).
 - ✅ Icône Wave (fournie) extraite avec fond transparent et intégrée : en-tête de la page réservation, note étape 2, bloc + bouton de paiement étape 3, section Paiement du dashboard.
 - ✅ Dashboard admin : auto-update + toast à chaque résa client (inchangé et re-vérifié), colonne Paiement avec acomptes, actions « Acompte reçu », carte « Acomptes encaissés ».
+
+---
+Task ID: 9
+Agent: main (Z.ai Code)
+Task: Repenser « Nos terrains de football » (gazon synthétique) · page Horaires & Tarifs (25 000 F/h, acompte 5 000 F, 08h–minuit) · page Calendrier public (réservations en cours/à venir) · page Contact (Kaolack-Mbour, +221 78 278 49 49) · remplacer l'icône Wave par l'image fournie sur la page de paiement.
+
+Work Log:
+- Image gazon synthétique générée via z-ai SDK (scripts/generate-gazon.ts, 1536×768) → public/gazon-synthetique.png (close-up fibres + ligne blanche, vérifiée VLM : aucun texte/artefact).
+- Image Wave fournie (upload/wave.png = 332×419, pingouin bleu + wordmark « Wave » sur fond noir, identique à public/wave-icon.png) copiée → public/wave-brand.png ; intégrée TELLE QUELLE (coins arrondis) sur la page de paiement.
+- Section « Nos terrains de football » repensée : bannière gazon synthétique (image + badge « 100 % gazon synthétique » + chips Éclairage nocturne/Buts avec filets/Vestiaires & douches) + cartes terrains avec icône Sprout et badge « Gazon synthétique » ; adresse → Croisement Kaolack - Mbour.
+- BD : scripts/update-terrains-synthetique.ts exécuté — Terrain B « Gazon naturel » → « Gazon synthétique », Terrain C renommé « Gazon synthétique 5v5 », descriptions synthétiques, événement maintenance mis à jour (fibres) ; seed.ts aligné. Vérif : 3 terrains 25 000 FCFA/h en base.
+- NOUVELLE page « Horaires & Tarifs » (horaires-page.tsx) : horaires 08:00→00:00 7j/7 avec frise horaire 08→24 + nocturnes ; tarif 25 000 FCFA/h ; « Comment payer » (acompte 5 000 F/h via Wave avec image wave-brand + solde 20 000 F/h sur place) ; tableau exemples 1h→4h (Total/Acompte/Solde) ; CTA Réserver + téléphone.
+- NOUVELLE page « Calendrier » (calendrier-page.tsx) : API publique GET /api/reservations/public créée (PENDING+CONFIRMED, date ≥ aujourd'hui Dakar, créneaux terminés exclus, flag `live` calculé serveur, AUCUNE donnée sensible — ni tél ni e-mail) ; grille mensuelle date-fns fr (mois passés désactivés, +2 mois max, points colorés par statut, compte « X résa. »), détail du jour cliquable, « Prochaines réservations », légende En cours/Confirmée/En attente, polling 30 s + reprise sur visibilité (badge « Actualisation auto · HH:mm:ss », badge « X matchs en cours » pulsé).
+- NOUVELLE page « Contact » (contact-page.tsx) : cartes Adresse (Croisement Kaolack - Mbour, Sénégal), Téléphone (+221 78 278 49 49, bouton Appeler tel:+221782784949), Horaires (7j/7 · 08:00→00:00) + panneau photo avec adresse en surimpression + CTA.
+- landing.tsx : vues SPA 'horaires'/'calendrier'/'contact' ajoutées ; nav 6 liens (Terrains, Horaires & Tarifs, Calendrier, Le Concept, À propos, Contact) — desktop lg:flex, burger < lg, « Espace admin » visible ≥ xl ; footer : téléphone + adresse + nav complète flex-wrap ; contact CTA accueil : +221 78 278 49 49 (lien), horaires 8 h→minuit, e-mail fictif supprimé ; mentions Dakar remplacées (À propos, badge terrains, layout.tsx metadata + keywords Kaolack/Mbour/gazon synthétique).
+- reservation-page.tsx : /wave-logo.png → /wave-brand.png aux 4 emplacements (badge en-tête h-4, note étape 2 h-[43px], bloc paiement étape 3 h-16, bouton « Payer » h-7) avec width/height intrinsèques 332×419 + classes h-X w-auto (ratio préservé, avertissements next/image corrigés) ; gazon-synthetique.png en loading="eager" (LCP).
+- Vérifications agent-browser desktop 1440×900 : accueil (nav 6 liens, bannière gazon + 3 cartes badges, VLM OK après scroll — l'espace vide du full-screenshot initial était un artefact whileInView) ; Horaires & Tarifs (frise, cartes, tableau, VLM : « impeccable ») ; Calendrier (points colorés, détail jeu. 3 sept. avec ASC Jaraaf « En cours », « 1 match en cours », auto-sync 19:13:14 puis 19:18:12→19:18:42 = polling 30 s vérifié) ; Contact (coordonnées exactes, VLM conforme) ; réservation end-to-end : créneaux passés grisés jusqu'à 19 h (19 h 16), 22 h sélectionné → formulaire → 201 → étape 3 avec image Wave nette (VLM) → clic « Payer 5 000F CFA » → NOUVEL ONGLET https://pay.wave.com/m/M_sn_if40h6RgxkCj?amount=5000 (lien exact de l'utilisateur) ; 2 réservations de test créées puis supprimées (base revenue à 10 résas seedées).
+- Vérifications mobile 375×812 : accueil + burger (8 entrées), footer en bas avec tél + adresse, Horaires empilées, Calendrier utilisable (grille + badge en cours) — VLM OK ; zéro erreur console, zéro avertissement image après correction.
+- bun run lint : 0 erreur. dev.log : uniquement 200/201, aucune erreur runtime.
+
+Stage Summary:
+- ✅ « Nos terrains de football » repensés autour du gazon synthétique (bannière + badges + 3 terrains renommés en BD et dans le seed).
+- ✅ Page « Horaires & Tarifs » : 08:00→minuit 7j/7, 25 000 FCFA/h, acompte 5 000 FCFA/h via Wave, solde sur place, tableau d'exemples.
+- ✅ Page « Calendrier » publique : toutes les réservations en cours/à venir (sans données sensibles), auto-actualisation 30 s, badge « match en cours » en temps réel, détail par jour.
+- ✅ Page « Contact » : Zalfoot — Croisement Kaolack - Mbour, Sénégal — +221 78 278 49 49 (lien tel:) + horaires ; coordonnées propagées accueil/footer/À propos/metadata.
+- ✅ Icône Wave remplacée par l'image fournie (pingouin + wordmark) sur toute la page de paiement ; bouton vérifié → lien Wave exact amount=5000.
+- Remarque : « acompte 50000f » du message interprété comme coquille → 5 000 F conservé (cohérent avec le lien Wave amount=5000 et les demandes précédentes).
