@@ -187,96 +187,12 @@ export function Landing({
             variants={fadeInUp}
             transition={{ duration: 0.35 }}
           >
-            {/* ===== Hero ===== */}
-            <section className="relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30" />
-              <div className="relative mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24">
-                <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-                  <motion.div
-                    initial="hidden"
-                    animate="visible"
-                    variants={fadeInUp}
-                    transition={{ duration: 0.5 }}
-                    className="flex flex-col gap-5"
-                  >
-                    <Badge className="w-fit gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
-                      <Sparkles className="size-3.5" />
-                      Location de terrains de football à l&apos;heure
-                    </Badge>
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
-                      Réservez votre <span className="text-primary">terrain de football</span> en quelques clics.
-                    </h1>
-                    <p className="text-lg text-muted-foreground max-w-xl">
-                      Gazon synthétique entretenu, éclairage nocturne, vestiaires : consultez les
-                      disponibilités en temps réel et bloquez votre heure de foot en moins d&apos;une
-                      minute.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Button size="lg" className="h-12 text-base" onClick={() => openBooking()}>
-                        <CalendarCheck className="size-5" />
-                        Réserver maintenant
-                      </Button>
-                      <Button size="lg" variant="outline" className="h-12 text-base" onClick={onOpenAdmin}>
-                        <LogIn className="size-5" />
-                        Connexion
-                      </Button>
-                    </div>
-
-                    <dl className="grid grid-cols-3 gap-4 pt-6 mt-2 border-t">
-                      {[
-                        { k: String(facilities.length || 3), v: 'Terrains de football' },
-                        { k: '7j/7', v: 'De 8 h à minuit' },
-                        { k: '98%', v: 'Joueurs satisfaits' },
-                      ].map((s) => (
-                        <div key={s.v} className="flex flex-col">
-                          <dt className="text-2xl sm:text-3xl font-extrabold text-primary">{s.k}</dt>
-                          <dd className="text-sm text-muted-foreground">{s.v}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.6, delay: 0.15 }}
-                    className="relative"
-                  >
-                    <div className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 aspect-[2/1]">
-                      <Image
-                        src="/hero-football.png"
-                        alt="Terrain de football de Zalfoot, pelouse verte balisée avec buts et projecteurs"
-                        fill
-                        priority
-                        sizes="(max-width: 1024px) 100vw, 50vw"
-                        className="object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-                    </div>
-                    <div className="absolute -bottom-5 left-5 right-5 sm:left-8 sm:right-auto">
-                      <Card className="shadow-lg border-emerald-100">
-                        <CardContent className="flex items-center gap-3 py-3 px-4">
-                          <span className="flex size-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                            <Users className="size-5" />
-                          </span>
-                          <div>
-                            <p className="text-sm font-semibold leading-none">+1 200 joueurs / mois</p>
-                            <p className="text-xs text-muted-foreground mt-1">nous font confiance</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
-            </section>
-
-            {/* ===== Terrains ===== */}
+            {/* ===== Terrains ===== (désormais en tête de page : le hero est déplacé juste après) */}
             <section id="installations" className="py-14 sm:py-20 bg-muted/40 border-y">
               <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
                   <div>
-                    <h2 className="text-3xl font-extrabold tracking-tight">Nos terrains de football</h2>
+                    <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Nos terrains de football</h1>
                     <p className="text-muted-foreground mt-2 max-w-2xl">
                       Du gazon synthétique, tout simplement. Surface stable par tous les temps,
                       entretenu quotidiennement, propre même en saison des pluies.
@@ -337,11 +253,12 @@ export function Landing({
                   </div>
                 </motion.div>
 
-                {/* Cartes terrains */}
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Cartes terrains — centrées horizontalement, même quand il ne reste qu'un terrain actif */}
+                <div className="flex flex-wrap justify-center gap-5">
                   {facilities.map((f, i) => (
                     <motion.div
                       key={f.id}
+                      className="w-full sm:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-2.5rem)/3)]"
                       initial="hidden"
                       whileInView="visible"
                       viewport={{ once: true, margin: '-50px' }}
@@ -390,6 +307,75 @@ export function Landing({
                 </div>
               </div>
             </section>
+
+            {/* ===== Hero déplacé : image du ballon sur le terrain + écritures superposées ===== */}
+            <motion.section
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-50px' }}
+              variants={fadeInUp}
+              transition={{ duration: 0.5 }}
+              className="relative overflow-hidden border-y"
+            >
+              <div className="relative flex items-center min-h-[560px] sm:min-h-[460px] lg:min-h-[540px]">
+                <Image
+                  src="/hero-football.png"
+                  alt="Terrain de football de Zalfoot, pelouse verte balisée avec buts et projecteurs"
+                  fill
+                  sizes="100vw"
+                  className="object-cover"
+                />
+                {/* Voiles sombres pour la lisibilité des écritures superposées */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/15" />
+
+                <div className="relative w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20">
+                  <div className="max-w-2xl flex flex-col gap-5">
+                    <Badge className="w-fit gap-1.5 border-white/30 bg-white/15 text-white backdrop-blur">
+                      <Sparkles className="size-3.5" />
+                      Location de terrains de football à l&apos;heure
+                    </Badge>
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] text-white">
+                      Réservez votre <span className="text-emerald-400">terrain de football</span> en
+                      quelques clics.
+                    </h2>
+                    <p className="text-base sm:text-lg text-white/85 max-w-xl">
+                      Gazon synthétique entretenu, éclairage nocturne, vestiaires : consultez les
+                      disponibilités en temps réel et bloquez votre heure de foot en moins
+                      d&apos;une minute.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button size="lg" className="h-12 text-base" onClick={() => openBooking()}>
+                        <CalendarCheck className="size-5" />
+                        Réserver maintenant
+                      </Button>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="h-12 text-base border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                        onClick={onOpenAdmin}
+                      >
+                        <LogIn className="size-5" />
+                        Connexion
+                      </Button>
+                    </div>
+
+                    <dl className="grid grid-cols-3 gap-4 pt-6 mt-2 border-t border-white/25">
+                      {[
+                        { k: String(facilities.length || 3), v: 'Terrains de football' },
+                        { k: '7j/7', v: 'De 8 h à minuit' },
+                        { k: '98%', v: 'Joueurs satisfaits' },
+                      ].map((s) => (
+                        <div key={s.v} className="flex flex-col">
+                          <dt className="text-2xl sm:text-3xl font-extrabold text-emerald-400">{s.k}</dt>
+                          <dd className="text-sm text-white/75">{s.v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </motion.section>
 
             {/* ===== Fonctionnement ===== */}
             <section id="fonctionnement" className="py-14 sm:py-20">
@@ -553,9 +539,9 @@ export function Landing({
                 <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
                   Le prix affiché est le prix payé. Réservation en ligne ou à l&apos;accueil, c&apos;est le même.
                 </p>
-                <div className="grid gap-5 sm:grid-cols-3 mt-10 max-w-4xl mx-auto">
+                <div className="flex flex-wrap justify-center gap-5 mt-10 max-w-4xl mx-auto">
                   {facilities.map((f) => (
-                    <Card key={f.id} className="h-full flex flex-col">
+                    <Card key={f.id} className="h-full flex flex-col w-full sm:w-[calc((100%-2.5rem)/3)]">
                       <CardHeader className="pb-3">
                         <h3 className="font-bold leading-snug">{f.name}</h3>
                       </CardHeader>

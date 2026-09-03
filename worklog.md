@@ -251,3 +251,22 @@ Stage Summary:
 - ✅ « Rappel démo » supprimé de la sidebar du dashboard.
 - ✅ Terrains désactivés invisibles partout côté public : accueil (cartes + stats), page réservation (état vide propre), calendrier public, API availability (404) et création de résa bloquée (404) — le dashboard continue de les voir avec boutons Réactiver.
 - ✅ Connexion accueil ↔ dashboard vérifiée de bout en bout : désactivation/réactivation de terrains reflétées côté public, nouvelles réservations visibles instantanément sur le calendrier public et le dashboard (temps réel), tarifs/acomptes/lien Wave pilotés par les données du dashboard.
+
+---
+Task ID: 15
+Agent: main (Z.ai Code)
+Task: 1) Centrer le terrain restant quand les autres sont désactivés. 2) Déplacer l'image du hero (ballon sur le terrain) sous la section « Nos terrains de football » et superposer les écritures du hero sur l'image.
+
+Work Log:
+- Lecture du contexte : src/components/zalspor/landing.tsx (structure hero + terrains), src/app/page.tsx, /api/facilities (ne renvoie que les terrains actifs), état BD vérifié (Terrain A actif, B et C désactivés — scénario exact signalé par l'utilisateur).
+- Compréhension confirmée à l'utilisateur AVANT de coder, comme demandé.
+- Centrage des cartes terrains (landing.tsx) : grille `grid gap-5 sm:grid-cols-2 lg:grid-cols-3` remplacée par `flex flex-wrap justify-center gap-5` + largeurs responsives sur les motion.div (`w-full sm:w-[calc((100%-1.25rem)/2)] lg:w-[calc((100%-2.5rem)/3)]`) → 1 carte = centrée, 2 cartes = paire centrée, 3 cartes = ligne pleine largeur identique à l'ancienne grille.
+- Même centrage appliqué à la grille tarifs de la page « Le Concept » (cohérence).
+- Déplacement du hero : ancien hero haut de page (image à droite + textes à gauche + carte flottante « +1 200 joueurs ») supprimé ; la section « Nos terrains de football » devient la première section (titre h2 → h1).
+- Nouvelle bannière insérée directement sous la section terrains : image /hero-football.png en fond pleine largeur (object-cover), double voile sombre dégradé pour la lisibilité, écritures superposées en blanc : badge « Location de terrains de football à l'heure », titre « Réservez votre terrain de football en quelques clics. » (accent émeraude), paragraphe « Gazon synthétique entretenu… », boutons « Réserver maintenant » + « Connexion », stats (nb terrains actifs / 7j/7 / 98 %).
+- Vérifications agent-browser : desktop 1440×900 → page commence par « Nos terrains », carte Terrain A centrée (blanc égal de chaque côté), bannière lisible avec tous les textes superposés ; clic « Réserver maintenant » → page de réservation ; clic « Connexion » → login admin ; mobile 375×812 → aucun défaut (carte pleine largeur, bannière lisible) ; test 3 terrains réactivés temporairement → ligne de 3 cartes pleine largeur conforme ; état BD restauré à l'identique (A actif, B et C désactivés) ; console sans erreur ; `bun run lint` 0 erreur ; dev.log propre.
+
+Stage Summary:
+- ✅ Terrain restant centré (1 ou 2 terrains actifs) au lieu d'aligné à gauche ; 3 terrains = grille pleine largeur inchangée.
+- ✅ Image du hero déplacée sous « Nos terrains de football » avec toutes les écritures du hero superposées sur l'image (badge, titre, paragraphe, boutons Réserver maintenant / Connexion, stats) ; l'ancien hero de haut de page a disparu, la page démarre par les terrains.
+- ✅ Vérifié desktop + mobile + interactions + cas 3 terrains, état BD restauré.
