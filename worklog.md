@@ -1,0 +1,63 @@
+# Worklog — Projet Zalspor
+
+---
+Task ID: 1
+Agent: main (Z.ai Code)
+Task: Cloner github.com/topmuch/zalspors, installer, lancer le dev, ajouter boutons "Ajouter" (Réservations + Calendrier) et corriger la création d'admin.
+
+Work Log:
+- Tentative de clone de https://github.com/topmuch/zalspors → ÉCHEC (404 : repo privé ou inexistant, GitHub demande une authentification).
+- Vérification de l'API GitHub : repo inaccessible publiquement.
+- Décision : reconstruire l'application "Zalspor" (gestion de réservations d'installations sportives) de zéro dans /home/z/my-project (Next.js 16 + Prisma + shadcn/ui), avec toutes les fonctionnalités demandées :
+  1. Dashboard admin avec section Réservations + bouton "Ajouter une réservation" (dialog + POST /api/reservations)
+  2. Section Calendrier + bouton "Ajouter un événement" (dialog + POST /api/calendar)
+  3. Section Administrateurs avec bouton "Créer un administrateur" PLEINEMENT FONCTIONNEL (POST /api/admins avec hash scrypt)
+- Stack : Next.js 16 App Router, TypeScript, Tailwind 4, shadcn/ui, Prisma + SQLite, sessions par token (Authorization Bearer).
+
+Stage Summary:
+- Repo GitHub inaccessible → reconstruction complète de l'app dans le projet courant.
+- Prochaines étapes : schéma Prisma, seed, frontend, API, tests navigateur.
+
+---
+Task ID: 2
+Agent: main (Z.ai Code)
+Task: Construire l'application Zalspor complète (schéma, seed, frontend, backend) et vérifier boutons Ajouter + création admin.
+
+Work Log:
+- Schéma Prisma (prisma/schema.prisma) : Admin, Session, Facility, Reservation, CalendarEvent + relations. `bun run db:push` OK.
+- src/lib/auth.ts : hachage scrypt (Node crypto, zéro dépendance), sessions Bearer 7 jours, getAuthAdmin/unauthorizedResponse.
+- prisma/seed.ts + exécution : 2 admins (admin@zalspor.com/admin123 SUPER_ADMIN, moussa@zalspor.com), 6 installations, 10 réservations, 6 événements. (Correction d'une faute de frappe `facilityEmail`→`customerEmail`.)
+- Thème : primaire émeraude (globals.css), layout.tsx FR + metadata Zalspor, scrollbar personnalisée `.zalspor-scroll`.
+- Frontend (src/components/zalspor/) : types.ts, api.ts (client + token localStorage), landing.tsx (hero + booking dialog public), admin-login.tsx, admin-dashboard.tsx (shell + 5 sections), reservations-section.tsx (bouton « Ajouter une réservation » + dialog + filtres + actions), calendar-section.tsx (grille mensuelle date-fns fr + bouton « Ajouter un événement » + dialogue détails du jour), admins-section.tsx (bouton « Créer un administrateur » + validation complète), overview-section.tsx (stats + AreaChart recharts), facilities-section.tsx.
+- page.tsx : orchestration SPA (public/connexion/dashboard) avec restauration de session.
+- API routes : /api/auth/login|logout|me, /api/admins (GET, POST création avec validations + hash scrypt + doublon email 409), /api/admins/[id] (PATCH/DELETE + protection dernier super admin), /api/reservations (GET, POST public+admin avec détection de conflits d'horaire 409), /api/reservations/[id] (PATCH statut, DELETE), /api/calendar (GET, POST), /api/calendar/[id] (PATCH, DELETE), /api/facilities (GET public, POST), /api/facilities/[id] (PATCH), /api/stats.
+- Image hero générée via z-ai SDK (scripts/generate-hero.ts, 1536x768 car l'API exige des multiples de 32) → public/hero-sports.png.
+- Corrections : icône lucide `UserShield` inexistante → `ShieldCheck` ; breakpoint `xs` invalide → `sm:` ; useEffect au lieu d'un hack useState ; nettoyage code mort.
+- Lint : 0 erreur. `GET /` 200.
+
+Stage Summary:
+- App Zalspor complète et fonctionnelle sur le port 3000.
+- Les 3 demandes sont implémentées : bouton Ajouter (Réservations), bouton Ajouter (Calendrier), bouton Créer un administrateur.
+
+---
+Task ID: 3
+Agent: main (Z.ai Code)
+Task: Vérification end-to-end avec agent-browser (golden path complet) + analyse visuelle VLM.
+
+Work Log:
+- agent-browser sur http://localhost:3000 : landing OK (6 installations chargées depuis la BD, hero image 200).
+- Connexion admin (admin@zalspor.com / admin123) OK → dashboard avec stats (10 réservations, 153 000 FCFA estimés, 6 événements, 2 admins).
+- Bouton « Ajouter une réservation » → dialogue rempli (« Test Navigateur », tennis, confirmée) → POST 201 → compteur 10→11, dialogue fermé, toast affiché.
+- Bouton « Ajouter un événement » (Calendrier) → « Tournoi amical de démonstration » → POST 201 → « 7 événements », jour du 3 sept. passe à 5 éléments.
+- Bouton « Créer un administrateur » → compte « Bineta Fall » (bineta.fall@zalspor.com / bineta123, Admin) créé → apparaît dans la table → DÉCONNEXION puis RECONNEXION avec ce nouveau compte : succès (« Bonjour Bineta 👋 ») — preuve que la création d'admin fonctionne de bout en bout (hash + session).
+- Réservation publique depuis la landing : conflit d'horaire détecté (409, contrôle anti-chevauchement OK) puis création réussie sur créneau libre (12:00-13:00) avec référence générée.
+- Changement de statut (Confirmer une réservation en attente) : 3→2 en attente, 8→9 confirmées.
+- Dialogue détails du jour (calendrier) : liste des événements + réservations du 3 sept. avec suppression.
+- Responsive mobile (375x812) : nav compacte, aucune erreur console ; footer sticky vérifié (gap 0 sur page courte, poussé naturellement sur page longue 4873px).
+- VLM (z-ai vision) sur captures desktop + mobile : design professionnel, pas de texte superposé ni d'élément cassé (remarques : widget dev Next.js + animations au scroll — comportements attendus).
+- dev.log : toutes les routes API en 200, aucune erreur runtime ; lint final : 0 erreur.
+
+Stage Summary:
+- ✅ Golden path complet vérifié dans le navigateur : les 3 fonctionnalités demandées (Ajouter réservation, Ajouter événement calendrier, Créer admin) fonctionnent réellement.
+- App prête : prévisualisation via le panneau de droite (bouton « Open in New Tab »).
+

@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Administrateurs de la plateforme (le bouton "Créer un admin" du dashboard)
+model Admin {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         String        @default("ADMIN") // SUPER_ADMIN | ADMIN
+  phone        String?
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  sessions     Session[]
+  reservations Reservation[] @relation("CreatedByAdmin")
+}
+
+// Sessions d'authentification (token Bearer)
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  adminId   String
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// Installations sportives (terrains / salles)
+model Facility {
+  id           String          @id @default(cuid())
+  name         String
+  type         String // FOOTBALL | TENNIS | BASKETBALL | PADEL | GYM | PISCINE | MULTISPORT
+  description  String?
+  pricePerHour Float           @default(0)
+  capacity     Int             @default(1)
+  imageUrl     String?
+  active       Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  reservations Reservation[]
+  events       CalendarEvent[]
+}
+
+// Réservations
+model Reservation {
+  id            String   @id @default(cuid())
+  reference     String   @unique @default(cuid())
+  customerName  String
+  customerEmail String?
+  customerPhone String?
+  facilityId    String
+  facility      Facility @relation(fields: [facilityId], references: [id])
+  date          String // YYYY-MM-DD
+  startTime     String // HH:mm
+  endTime       String // HH:mm
+  status        String   @default("PENDING") // PENDING | CONFIRMED | CANCELLED
+  notes         String?
+  source        String   @default("PUBLIC") // PUBLIC | ADMIN
+  createdByAdminId String?
+  createdByAdmin  Admin?  @relation("CreatedByAdmin", fields: [createdByAdminId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Événements du calendrier (disponibilités, entraînements, maintenance…)
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        String   @default("EVENEMENT") // DISPONIBILITE | ENTRAINEMENT | MAINTENANCE | EVENEMENT
+  facilityId  String?
+  facility    Facility? @relation(fields: [facilityId], references: [id])
+  date        String // YYYY-MM-DD
+  startTime   String // HH:mm
+  endTime     String // HH:mm
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
