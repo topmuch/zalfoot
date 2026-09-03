@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 const DEFAULT_TITLE = "Zalfoot — Location de terrains de football à l'heure";
 const DEFAULT_DESCRIPTION =
-  "Réservez votre terrain de football en gazon synthétique à l'heure (Croisement Kaolack - Mbour, Sénégal) : horaires 08h–minuit, 25 000 FCFA/h, acompte Wave, disponibilités en temps réel.";
+  "Réservez votre terrain de football en gazon synthétique à l'heure (Croisement Kaolack - Mbour, Sénégal) : horaires 08h–01h du matin, 25 000 FCFA/h, acompte Wave, disponibilités en temps réel.";
 const DEFAULT_KEYWORDS = [
   "Zalfoot",
   "football",

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { getAuthAdmin, unauthorizedResponse } from '@/lib/auth'
-import { timeToMinutes } from '@/lib/time'
+import { timeToMinutes, reservationInterval } from '@/lib/time'
 import { computeDeposit } from '@/lib/pricing'
 
 function isoDate(d: Date): string {
@@ -26,8 +26,10 @@ export async function GET(request: NextRequest) {
   ])
 
   const confirmed = reservations.filter((r) => r.status === 'CONFIRMED')
-  const hoursOf = (r: (typeof reservations)[number]): number =>
-    Math.max((timeToMinutes(r.endTime, true) - timeToMinutes(r.startTime)) / 60, 0)
+  const hoursOf = (r: (typeof reservations)[number]): number => {
+    const { start, end } = reservationInterval(r.startTime, r.endTime)
+    return Math.max((end - start) / 60, 0)
+  }
   const amountOf = (r: (typeof reservations)[number]): number => {
     if (typeof r.amount === 'number' && r.amount > 0) return r.amount
     return hoursOf(r) * (r.facility?.pricePerHour ?? 0)
@@ -63,7 +65,11 @@ export async function GET(request: NextRequest) {
   // Prochaines réservations (aujourd'hui et après, non annulées)
   const upcoming = reservations
     .filter((r) => r.date >= todayIso && r.status !== 'CANCELLED')
-    .sort((a, b) => (a.date === b.date ? a.startTime.localeCompare(b.startTime) : a.date.localeCompare(b.date)))
+    .sort((a, b) =>
+      a.date === b.date
+        ? timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
+        : a.date.localeCompare(b.date),
+    )
     .slice(0, 8)
 
   const statusBreakdown = [

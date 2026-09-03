@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { OPEN_END_MINUTES, OPEN_START_MINUTES, SLOT_COUNT, isSlotPast, timeToMinutes } from '@/lib/time'
+import { OPEN_END_MINUTES, OPEN_START_MINUTES, SLOT_COUNT, isSlotPast, reservationInterval } from '@/lib/time'
 
 /**
  * GET /api/availability (public)
  * Deux usages :
- *  1. ?facilityId=...&date=YYYY-MM-DD   → état de chaque créneau horaire du jour (08:00 → 00:00)
+ *  1. ?facilityId=...&date=YYYY-MM-DD   → état de chaque créneau horaire du jour (08:00 → 01:00)
  *  2. ?facilityId=...&month=YYYY-MM     → nombre de créneaux libres par jour du mois
  *
  * États d'un créneau :
@@ -39,10 +39,8 @@ async function getDayIntervals(facilityId: string, dates: string[]) {
     }),
   ])
 
-  const toInterval = (row: { startTime: string; endTime: string }): Interval => ({
-    start: timeToMinutes(row.startTime),
-    end: timeToMinutes(row.endTime, true),
-  })
+  const toInterval = (row: { startTime: string; endTime: string }): Interval =>
+    reservationInterval(row.startTime, row.endTime)
 
   const byDate = new Map<string, { booked: Interval[]; closed: Interval[] }>()
   for (const d of dates) byDate.set(d, { booked: [], closed: [] })
@@ -96,7 +94,7 @@ export async function GET(request: NextRequest) {
     return Response.json({
       facilityId,
       date,
-      open: { start: '08:00', end: '00:00' },
+      open: { start: '08:00', end: '01:00' },
       pricePerHour: facility.pricePerHour,
       slots,
     })

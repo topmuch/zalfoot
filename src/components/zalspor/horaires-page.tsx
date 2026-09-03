@@ -24,8 +24,8 @@ const fadeInUp = {
   visible: { opacity: 1, y: 0 },
 }
 
-/** Graduations de la frise horaire 08 h → minuit */
-const HOURS_TICKS = [8, 10, 12, 14, 16, 18, 20, 22, 24]
+/** Graduations de la frise horaire 08 h → 01 h du matin */
+const HOURS_TICKS = [8, 10, 12, 14, 16, 18, 20, 22, 24, 25]
 
 export function HorairesPage({
   facilities,
@@ -58,7 +58,7 @@ export function HorairesPage({
               Horaires &amp; tarifs
             </Badge>
             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mt-5 leading-[1.1]">
-              Ouverts de 8 h à minuit, <span className="text-primary">7 jours sur 7.</span>
+              Ouverts de 8 h à 1 h du matin, <span className="text-primary">7 jours sur 7.</span>
             </h1>
             <p className="text-lg text-muted-foreground mt-5 max-w-2xl">
               Un tarif unique et transparent :{' '}
@@ -76,8 +76,8 @@ export function HorairesPage({
         <div className="mx-auto w-full max-w-[1920px] px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-extrabold tracking-tight">Horaires d&apos;ouverture</h2>
           <p className="text-muted-foreground mt-2 max-w-2xl">
-            Le complexe accueille les joueurs tous les jours, de 8 h jusqu&apos;à minuit —
-            éclairage nocturne inclus.
+            Le complexe accueille les joueurs tous les jours, de 8 h jusqu&apos;à 1 h du
+            matin — éclairage nocturne inclus.
           </p>
 
           <Card className="mt-8 overflow-hidden">
@@ -89,10 +89,10 @@ export function HorairesPage({
                   </span>
                   <div>
                     <p className="text-3xl font-extrabold tabular-nums tracking-tight">
-                      08:00 <span className="text-muted-foreground font-medium">→</span> 00:00
+                      08:00 <span className="text-muted-foreground font-medium">→</span> 01:00
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      de 8 h du matin à minuit, sans interruption
+                      de 8 h le matin à 1 h du matin, sans interruption
                     </p>
                   </div>
                 </div>
@@ -102,18 +102,18 @@ export function HorairesPage({
                   </span>
                   <p className="text-sm text-muted-foreground max-w-[16rem]">
                     <strong className="text-foreground">Éclairage nocturne</strong> : jouez aussi
-                    le soir, jusqu&apos;au dernier créneau de 23 h → minuit.
+                    le soir, jusqu&apos;au dernier créneau de 0 h → 1 h.
                   </p>
                 </div>
               </div>
 
-              {/* Frise horaire 08 h → minuit */}
+              {/* Frise horaire 08 h → 01 h */}
               <div className="mt-8" aria-hidden="true">
                 <div className="relative h-3 rounded-full bg-gradient-to-r from-amber-200 via-emerald-300 to-emerald-600 dark:from-amber-500/60 dark:via-emerald-500/60 dark:to-emerald-800" />
-                <div className="mt-2 grid grid-cols-9 text-[11px] sm:text-xs text-muted-foreground tabular-nums">
+                <div className="mt-2 grid grid-cols-10 text-[11px] sm:text-xs text-muted-foreground tabular-nums">
                   {HOURS_TICKS.map((h) => (
                     <span key={h} className="text-center">
-                      {h === 24 ? '00:00' : `${String(h).padStart(2, '0')}:00`}
+                      {h === 24 ? '00:00' : h === 25 ? '01:00' : `${String(h).padStart(2, '0')}:00`}
                     </span>
                   ))}
                 </div>
@@ -124,7 +124,7 @@ export function HorairesPage({
                   <CalendarDays className="size-3.5" /> Lundi → dimanche
                 </Badge>
                 <Badge variant="outline" className="gap-1.5">
-                  <Clock className="size-3.5" /> 16 créneaux d&apos;1 heure par jour
+                  <Clock className="size-3.5" /> 17 créneaux d&apos;1 heure par jour
                 </Badge>
                 <Badge variant="outline" className="gap-1.5">
                   <Moon className="size-3.5" /> Nocturnes 7j/7

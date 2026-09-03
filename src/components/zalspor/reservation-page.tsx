@@ -54,8 +54,9 @@ import { DEPOSIT_PER_HOUR } from '../../lib/pricing'
 
 // ============================================================
 // Page de réservation — PAGE DÉDIÉE (plus de modale).
-// Calendrier visible + créneaux horaires 08:00 → minuit (1 h),
-// sélection d'heures consécutives, coordonnées (nom + téléphone),
+// Calendrier visible + créneaux horaires 08:00 → 01:00 du matin (1 h),
+// le dernier match commence à minuit (00:00 → 01:00). Sélection
+// d'heures consécutives, coordonnées (nom + téléphone sans indicatif),
 // puis paiement de l'ACOMPTE (5 000 FCFA / heure réservée) via
 // Wave Business. Le solde est réglé sur place.
 // 25 000 FCFA / heure.
@@ -318,7 +319,7 @@ export function ReservationPage({
                 Réserver votre <span className="text-primary">terrain de football</span>
               </h1>
               <p className="text-muted-foreground mt-3 max-w-2xl leading-relaxed">
-                Choisissez la date et l&apos;heure (08:00 → minuit) parmi les créneaux libres, puis
+                Choisissez la date et l&apos;heure (08:00 → 01:00 du matin) parmi les créneaux libres, puis
                 bloquez votre terrain avec un acompte de{' '}
                 <strong className="text-foreground">{formatPrice(DEPOSIT_PER_HOUR)}</strong> par
                 heure réservée, payé avec Wave.
@@ -486,7 +487,7 @@ export function ReservationPage({
                         const tooFar = iso > maxIso
                         const full = monthSummary !== null && (monthSummary[iso] ?? -1) === 0 && !past && !tooFar
                         const almostFull =
-                          !full && monthSummary !== null && (monthSummary[iso] ?? 16) > 0 && (monthSummary[iso] ?? 16) <= 4
+                          !full && monthSummary !== null && (monthSummary[iso] ?? 17) > 0 && (monthSummary[iso] ?? 17) <= 4
                         const disabled = !inMonth || past || tooFar || full
                         const selected = date === iso
                         const today = isSameDay(day, new Date())
@@ -537,7 +538,7 @@ export function ReservationPage({
 
                     {slotsLoading ? (
                       <div className="grid grid-cols-4 gap-2">
-                        {Array.from({ length: 16 }).map((_, i) => (
+                        {Array.from({ length: 17 }).map((_, i) => (
                           <Skeleton key={i} className="h-16 rounded-xl" />
                         ))}
                       </div>
@@ -741,7 +742,7 @@ export function ReservationPage({
                           className="pl-9"
                           type="tel"
                           inputMode="tel"
-                          placeholder="+221 77 000 00 00"
+                          placeholder="77 123 45 67"
                           value={customerPhone}
                           onChange={(e) => setCustomerPhone(e.target.value)}
                           required
@@ -749,8 +750,8 @@ export function ReservationPage({
                         />
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Le numéro sur lequel vous recevrez la confirmation et le suivi de votre
-                        réservation.
+                        Tapez votre numéro directement, sans indicatif — ex. 77 123 45 67. C&apos;est
+                        celui qui recevra la confirmation et le suivi de votre réservation.
                       </p>
                     </div>
 

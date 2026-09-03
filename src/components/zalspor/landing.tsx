@@ -47,6 +47,7 @@ type PublicPage =
   | 'reserver'
 
 const NAV_LINKS: { page: PublicPage; anchor?: string; label: string }[] = [
+  { page: 'accueil', label: 'Accueil' },
   { page: 'accueil', anchor: 'installations', label: 'Terrains' },
   { page: 'horaires', label: 'Horaires & Tarifs' },
   { page: 'calendrier', label: 'Calendrier' },
@@ -233,7 +234,7 @@ export function Landing({
                     <dl className="grid grid-cols-3 gap-4 pt-6 mt-2 border-t border-white/25">
                       {[
                         { k: String(facilities.length || 3), v: 'Terrains de football' },
-                        { k: '7j/7', v: 'De 8 h à minuit' },
+                        { k: '7j/7', v: 'De 8 h à 1 h' },
                         { k: '98%', v: 'Joueurs satisfaits' },
                       ].map((s) => (
                         <div key={s.v} className="flex flex-col">
@@ -351,7 +352,7 @@ export function Landing({
                 </motion.div>
                 <div className="grid gap-6 sm:grid-cols-3 mt-8">
                   {[
-                    { n: '1', icon: CalendarCheck, t: 'Choisissez votre créneau', d: 'Calendrier visible : sélectionnez la date et l’heure (08:00 → minuit) parmi les créneaux libres.' },
+                    { n: '1', icon: CalendarCheck, t: 'Choisissez votre créneau', d: 'Calendrier visible : sélectionnez la date et l’heure (08:00 → 01:00) parmi les créneaux libres.' },
                     { n: '2', icon: Waves, t: 'Payez l’acompte avec Wave', d: 'Bloquez votre créneau avec un acompte de 5 000 FCFA par heure via Wave — le solde se règle sur place.' },
                     { n: '3', icon: Trophy, t: 'Jouez !', d: 'Votre créneau est bloqué : présentez votre référence à l’accueil et profitez de votre heure de foot.' },
                   ].map((step) => (
@@ -381,7 +382,7 @@ export function Landing({
                       <h2 className="text-2xl sm:text-3xl font-extrabold">Prêt à jouer ce week-end ?</h2>
                       <p className="mt-2 text-primary-foreground/85 max-w-lg">
                         Réservez votre heure de foot en ligne maintenant, ou appelez-nous 7 j/7 de
-                        8 h à minuit.
+                        8 h à 1 h du matin.
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { getAuthAdmin } from '@/lib/auth'
-import { OPEN_END_MINUTES, OPEN_START_MINUTES, isSlotPast, nowInDakar, timeToMinutes } from '@/lib/time'
+import { OPEN_END_MINUTES, OPEN_START_MINUTES, isSlotPast, nowInDakar, reservationInterval, timeToMinutes } from '@/lib/time'
 import { computeDeposit } from '@/lib/pricing'
 import { sendReservationNotification } from '@/lib/email'
 
@@ -17,8 +17,8 @@ async function hasConflict(
   endTime: string,
   excludeId?: string,
 ): Promise<boolean> {
-  const start = timeToMinutes(startTime)
-  const end = timeToMinutes(endTime, true)
+  const start = reservationInterval(startTime, endTime).start
+  const end = reservationInterval(startTime, endTime).end
   const reservations = await db.reservation.findMany({
     where: {
       facilityId,
@@ -29,9 +29,8 @@ async function hasConflict(
     select: { startTime: true, endTime: true },
   })
   return reservations.some((r) => {
-    const s = timeToMinutes(r.startTime)
-    const e = timeToMinutes(r.endTime, true)
-    return start < e && s < end
+    const ri = reservationInterval(r.startTime, r.endTime)
+    return start < ri.end && ri.start < end
   })
 }
 
@@ -60,7 +59,7 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/reservations — créer une réservation.
  * - Sans auth (source PUBLIC) : réservation client via le calendrier de créneaux.
- *   Nom + téléphone obligatoires, créneau 08:00 → minuit à l'heure pile, futur uniquement.
+ *   Nom + téléphone obligatoires, créneau 08:00 → 01:00 à l'heure pile, futur uniquement.
  *   Montant total calculé côté serveur (25 000 F/h) + acompte Wave (5 000 F/h),
  *   paiement WAVE (acompte UNPAID à la création).
  * - Avec auth (source ADMIN) : création directe par un admin, statut libre.
@@ -101,7 +100,12 @@ export async function POST(request: NextRequest) {
   if (!TIME_REGEX.test(startTime) || !TIME_REGEX.test(endTime)) {
     return Response.json({ error: 'Horaires invalides (format attendu HH:mm).' }, { status: 400 })
   }
-  if (timeToMinutes(endTime, true) <= timeToMinutes(startTime)) {
+  const startMin = timeToMinutes(startTime)
+  let endMin = timeToMinutes(endTime, true)
+  // Créneau nocturne franchissant minuit : la fin tombe avant l'ouverture
+  // (ex. 23:00 → 01:00 ou le dernier match 00:00 → 01:00)
+  if (endMin < startMin && endMin <= OPEN_START_MINUTES) endMin += 24 * 60
+  if (endMin <= startMin) {
     return Response.json({ error: "L'heure de fin doit être postérieure à l'heure de début." }, { status: 400 })
   }
   if (customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
@@ -114,17 +118,15 @@ export async function POST(request: NextRequest) {
     const phoneDigits = (customerPhone ?? '').replace(/\D/g, '')
     if (!customerPhone || phoneDigits.length < 8) {
       return Response.json(
-        { error: 'Le numéro de téléphone est requis (au moins 8 chiffres, ex. +221 77 000 00 00).' },
+        { error: 'Le numéro de téléphone est requis (au moins 8 chiffres, ex. 77 123 45 67).' },
         { status: 400 },
       )
     }
 
-    // Créneaux réservables de 08:00 à minuit (00:00 = fin de journée)
-    const startMin = timeToMinutes(startTime)
-    const endMin = timeToMinutes(endTime, true)
+    // Créneaux réservables de 08:00 à 01:00 (le dernier match commence à minuit)
     if (startMin < OPEN_START_MINUTES || endMin > OPEN_END_MINUTES) {
       return Response.json(
-        { error: 'Les réservations sont possibles de 08:00 à minuit uniquement.' },
+        { error: 'Les réservations sont possibles de 08:00 à 01:00 uniquement (dernier match : minuit → 01:00).' },
         { status: 400 },
       )
     }
@@ -157,7 +159,7 @@ export async function POST(request: NextRequest) {
 
   // Montants en FCFA calculés côté serveur :
   // total = durée × tarif horaire · acompte = durée × 5 000 F (à verser via Wave)
-  const durationHours = (timeToMinutes(endTime, true) - timeToMinutes(startTime)) / 60
+  const durationHours = (endMin - startMin) / 60
   const amount = Math.round(durationHours * facility.pricePerHour)
   const depositAmount = computeDeposit(durationHours)
 

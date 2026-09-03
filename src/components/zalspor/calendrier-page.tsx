@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { apiFetch } from './api'
+import { reservationInterval } from '@/lib/time'
 import { formatDateFr, formatHourLabel, type PublicCalendarData, type PublicReservation } from './types'
 
 const fadeInUp = {
@@ -99,7 +100,14 @@ export function CalendrierPage({ onReserve }: { onReserve: () => void }) {
       if (list) list.push(r)
       else map.set(r.date, [r])
     }
-    for (const list of map.values()) list.sort((a, b) => a.startTime.localeCompare(b.startTime))
+    // Tri chronologique réel (le créneau de minuit 00:00 est le DERNIER de la
+    // journée, pas le premier comme le tri alphabétique le laisserait croire)
+    for (const list of map.values())
+      list.sort(
+        (a, b) =>
+          reservationInterval(a.startTime, a.endTime).start -
+          reservationInterval(b.startTime, b.endTime).start,
+      )
     return map
   }, [reservations])
 
@@ -308,7 +316,7 @@ export function CalendrierPage({ onReserve }: { onReserve: () => void }) {
                   ) : selectedList.length === 0 ? (
                     <div className="grid gap-3">
                       <p className="text-sm text-muted-foreground">
-                        Aucune réservation ce jour-là : tous les créneaux de 08:00 à minuit sont
+                        Aucune réservation ce jour-là : tous les créneaux de 08:00 à 01:00 sont
                         disponibles.
                       </p>
                       <Button size="sm" onClick={onReserve}>
@@ -424,7 +432,7 @@ export function CalendrierPage({ onReserve }: { onReserve: () => void }) {
               Réserver un terrain
             </Button>
             <p className="text-sm text-muted-foreground text-center">
-              Créneaux libres tous les jours de 08:00 à minuit.
+              Créneaux libres tous les jours de 08:00 à 01:00 du matin.
             </p>
           </div>
         </div>

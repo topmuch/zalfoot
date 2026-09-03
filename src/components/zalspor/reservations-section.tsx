@@ -87,13 +87,22 @@ function todayStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-/** Minutes écoulées depuis minuit ("18:30" → 1110 ; "00:00" en fin = 1440). */
-function timeToMinutes(time: string, endOfDay = false): number {
+/** Minutes depuis minuit ("18:30" → 1110 ; "00:00" = minuit de fin de journée → 1440). */
+function timeToMinutes(time: string, _endOfDay = false): number {
   const [h, m] = time.split(':').map(Number)
   const hours = Number.isFinite(h) ? h : 0
   const minutes = Number.isFinite(m) ? m : 0
-  if (endOfDay && hours === 0 && minutes === 0) return 24 * 60
-  return hours * 60 + minutes
+  const total = hours * 60 + minutes
+  if (total === 0) return 24 * 60
+  return total
+}
+
+/** Intervalle du créneau, minuit franchi inclus ("23:00"→"01:00" = 1380 → 1500). */
+function slotRange(start: string, end: string): { start: number; end: number } {
+  const s = timeToMinutes(start)
+  let e = timeToMinutes(end, true)
+  if (e < s && e <= 8 * 60) e += 24 * 60
+  return { start: s, end: e }
 }
 
 /** Minutes actuelles depuis minuit. */
@@ -102,20 +111,24 @@ function nowMinutes(): number {
   return d.getHours() * 60 + d.getMinutes()
 }
 
-/** Le créneau est-il entièrement terminé ? */
+/** Le créneau est-il entièrement terminé ? (gère les nocturnes après minuit) */
 function isReservationPast(r: Reservation): boolean {
   const today = todayStr()
-  if (r.date < today) return true
   if (r.date > today) return false
-  return timeToMinutes(r.endTime, true) <= nowMinutes()
+  const { end } = slotRange(r.startTime, r.endTime)
+  if (r.date === today) return end <= nowMinutes()
+  // Réservation d'hier qui franchit minuit : terminée seulement après sa fin réelle
+  if (end > 24 * 60) return end - 24 * 60 <= nowMinutes()
+  return true
 }
 
 /**
- * Créneau valide : la fin est strictement après le début.
- * « 00:00 » en fin de créneau = minuit de fin de journée (1440).
+ * Créneau valide : la fin est strictement après le début,
+ * y compris en franchissant minuit ("23:00" → "01:00").
  */
 function isValidSlot(start: string, end: string): boolean {
-  return timeToMinutes(end, true) > timeToMinutes(start)
+  const { start: s, end: e } = slotRange(start, end)
+  return e > s
 }
 
 function emptyForm(facilities: Facility[]): NewReservationForm {
@@ -404,9 +417,12 @@ export function ReservationsSection({
   const sorted = useMemo(() => {
     const list = [...filtered]
     const today = todayStr()
+    // Tri chronologique réel : le créneau de minuit (00:00) est le dernier de la journée
     if (sortMode === 'recent') {
       list.sort((a, b) =>
-        a.date === b.date ? b.startTime.localeCompare(a.startTime) : b.date.localeCompare(a.date),
+        a.date === b.date
+          ? timeToMinutes(b.startTime) - timeToMinutes(a.startTime)
+          : b.date.localeCompare(a.date),
       )
     } else {
       list.sort((a, b) => {
@@ -415,11 +431,11 @@ export function ReservationsSection({
         if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1
         if (aUpcoming) {
           return a.date === b.date
-            ? a.startTime.localeCompare(b.startTime)
+            ? timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
             : a.date.localeCompare(b.date)
         }
         return a.date === b.date
-          ? b.startTime.localeCompare(a.startTime)
+          ? timeToMinutes(b.startTime) - timeToMinutes(a.startTime)
           : b.date.localeCompare(b.date)
       })
     }

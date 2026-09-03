@@ -315,7 +315,7 @@ export function SettingsSection({ onUnauthorized }: { onUnauthorized: () => void
             </p>
             <p className="text-xs text-foreground/80 mt-0.5 line-clamp-2">
               {(settings.seoDescription ?? '').trim() ||
-                "Réservez votre terrain de football en gazon synthétique à l'heure : horaires 08h–minuit, 25 000 FCFA/h, acompte Wave."}
+                "Réservez votre terrain de football en gazon synthétique à l'heure : horaires 08h–01h du matin, 25 000 FCFA/h, acompte Wave."}
             </p>
           </div>
 
