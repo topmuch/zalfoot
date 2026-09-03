@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import {
   Ban,
+  BadgeCheck,
   CalendarPlus,
   CheckCircle2,
   Clock,
@@ -14,6 +15,7 @@ import {
   Search,
   Trash2,
   User,
+  Wallet,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -48,8 +50,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast'
 import { apiFetch, ApiError } from './api'
 import {
+  PAYMENT_METHOD_META,
+  PAYMENT_STATUS_META,
   RESERVATION_STATUS_META,
   formatDateFr,
+  formatHourLabel,
   formatPrice,
   type Admin,
   type Facility,
@@ -66,6 +71,24 @@ type NewReservationForm = {
   endTime: string
   status: string
   notes: string
+}
+
+/** Minutes écoulées depuis minuit ("18:30" → 1110). */
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number)
+  const hours = Number.isFinite(h) ? h : 0
+  const minutes = Number.isFinite(m) ? m : 0
+  return hours * 60 + minutes
+}
+
+/**
+ * Créneau valide : la fin est strictement après le début.
+ * « 00:00 » en fin de créneau = minuit de fin de journée (1440),
+ * ce qui autorise par ex. 23:00 → 00:00.
+ */
+function isValidSlot(start: string, end: string): boolean {
+  const endMinutes = end === '00:00' ? 24 * 60 : timeToMinutes(end)
+  return endMinutes > timeToMinutes(start)
 }
 
 function emptyForm(facilities: Facility[]): NewReservationForm {
@@ -107,7 +130,7 @@ function AddReservationDialog({
     form.facilityId &&
     form.date &&
     form.startTime &&
-    form.endTime > form.startTime
+    isValidSlot(form.startTime, form.endTime)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -352,6 +375,31 @@ export function ReservationsSection({
     }
   }
 
+  /** Marque une réservation comme payée / impayée (Wave ou sur place). */
+  async function updatePayment(id: string, paymentStatus: 'PAID' | 'UNPAID') {
+    setBusyId(id)
+    try {
+      await apiFetch(`/api/reservations/${id}`, { method: 'PATCH', auth: true, body: { paymentStatus } })
+      toast({
+        title: 'Paiement mis à jour',
+        description:
+          paymentStatus === 'PAID'
+            ? 'La réservation est marquée comme payée.'
+            : 'La réservation est marquée comme impayée.',
+      })
+      onRefresh()
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) return onUnauthorized()
+      toast({
+        title: 'Action impossible',
+        description: error instanceof ApiError ? error.message : 'Réessayez.',
+        variant: 'destructive',
+      })
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   async function deleteReservation(id: string) {
     setBusyId(id)
     try {
@@ -455,6 +503,7 @@ export function ReservationsSection({
                     <TableHead>Date</TableHead>
                     <TableHead className="hidden sm:table-cell">Créneau</TableHead>
                     <TableHead>Statut</TableHead>
+                    <TableHead className="hidden md:table-cell">Paiement</TableHead>
                     <TableHead className="hidden lg:table-cell">Source</TableHead>
                     <TableHead className="w-12 text-right">Actions</TableHead>
                   </TableRow>
@@ -462,6 +511,10 @@ export function ReservationsSection({
                 <TableBody>
                   {filtered.map((r) => {
                     const meta = RESERVATION_STATUS_META[r.status] ?? { label: r.status, variant: 'outline' as const }
+                    const payMeta = PAYMENT_STATUS_META[r.paymentStatus] ?? {
+                      label: r.paymentStatus,
+                      variant: 'outline' as const,
+                    }
                     return (
                       <TableRow key={r.id} className={busyId === r.id ? 'opacity-50' : undefined}>
                         <TableCell className="font-mono text-xs text-muted-foreground">
@@ -478,10 +531,29 @@ export function ReservationsSection({
                         <TableCell className="hidden md:table-cell text-sm">{r.facility?.name ?? '—'}</TableCell>
                         <TableCell className="text-sm whitespace-nowrap">{formatDateFr(r.date)}</TableCell>
                         <TableCell className="hidden sm:table-cell text-sm whitespace-nowrap">
-                          {r.startTime} – {r.endTime}
+                          {r.startTime} – {formatHourLabel(r.endTime)}
                         </TableCell>
                         <TableCell>
                           <Badge variant={meta.variant}>{meta.label}</Badge>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <div className="flex flex-col items-start gap-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {r.paymentMethod ? (
+                                <Badge variant="outline" className="px-1.5 py-0 text-[11px] font-medium">
+                                  {PAYMENT_METHOD_META[r.paymentMethod] ?? r.paymentMethod}
+                                </Badge>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                              <Badge variant={payMeta.variant} className="px-1.5 py-0 text-[11px]">
+                                {payMeta.label}
+                              </Badge>
+                            </div>
+                            {typeof r.amount === 'number' && (
+                              <span className="text-[11px] text-muted-foreground">{formatPrice(r.amount)}</span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
                           <Badge variant={r.source === 'ADMIN' ? 'default' : 'outline'}>
@@ -507,6 +579,17 @@ export function ReservationsSection({
                                 <DropdownMenuItem onClick={() => updateStatus(r.id, 'CANCELLED')}>
                                   <Ban className="size-4 text-orange-600" />
                                   Annuler
+                                </DropdownMenuItem>
+                              )}
+                              {r.paymentStatus !== 'PAID' ? (
+                                <DropdownMenuItem onClick={() => updatePayment(r.id, 'PAID')}>
+                                  <BadgeCheck className="size-4 text-emerald-600" />
+                                  Marquer payé
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem onClick={() => updatePayment(r.id, 'UNPAID')}>
+                                  <Wallet className="size-4 text-muted-foreground" />
+                                  Marquer impayé
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />

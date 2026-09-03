@@ -1,0 +1,953 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import { useEffect, useState } from 'react'
+     4→     4→import Image from 'next/image'
+     5→     5→import { motion } from 'framer-motion'
+     6→     6→import {
+     7→     7→  BadgeCheck,
+     8→     8→  CalendarCheck,
+     9→     9→  CheckCircle2,
+    10→    10→  Clock,
+    11→    11→  Flame,
+    12→    12→  GraduationCap,
+    13→    13→  Heart,
+    14→    14→  Loader2,
+    15→    15→  Mail,
+    16→    16→  MapPin,
+    17→    17→  Phone,
+    18→    18→  ShieldCheck,
+    19→    19→  Sparkles,
+    20→    20→  Target,
+    21→    21→  Trophy,
+    22→    22→  Users,
+    23→    23→  Zap,
+    24→    24→} from 'lucide-react'
+    25→    25→import { Button } from '@/components/ui/button'
+    26→    26→import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+    27→    27→import { Badge } from '@/components/ui/badge'
+    28→    28→import { Input } from '@/components/ui/input'
+    29→    29→import { Label } from '@/components/ui/label'
+    30→    30→import { Textarea } from '@/components/ui/textarea'
+    31→    31→import {
+    32→    32→  Dialog,
+    33→    33→  DialogContent,
+    34→    34→  DialogDescription,
+    35→    35→  DialogFooter,
+    36→    36→  DialogHeader,
+    37→    37→  DialogTitle,
+    38→    38→} from '@/components/ui/dialog'
+    39→    39→import {
+    40→    40→  Select,
+    41→    41→  SelectContent,
+    42→    42→  SelectItem,
+    43→    43→  SelectTrigger,
+    44→    44→  SelectValue,
+    45→    45→} from '@/components/ui/select'
+    46→    46→import { useToast } from '@/hooks/use-toast'
+    47→    47→import { apiFetch, ApiError } from './api'
+    48→    48→import { formatPrice, type Facility } from './types'
+    49→    49→import { Brand } from './brand'
+    50→    50→
+    51→    51→type BookingForm = {
+    52→    52→  facilityId: string
+    53→    53→  date: string
+    54→    54→  startTime: string
+    55→    55→  endTime: string
+    56→    56→  customerName: string
+    57→    57→  customerEmail: string
+    58→    58→  customerPhone: string
+    59→    59→  notes: string
+    60→    60→}
+    61→    61→
+    62→    62→function todayIso(): string {
+    63→    63→  const d = new Date()
+    64→    64→  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    65→    65→}
+    66→    66→
+    67→    67→export function BookingDialog({
+    68→    68→  open,
+    69→    69→  onOpenChange,
+    70→    70→  facilities,
+    71→    71→  preselectedFacilityId,
+    72→    72→}: {
+    73→    73→  open: boolean
+    74→    74→  onOpenChange: (open: boolean) => void
+    75→    75→  facilities: Facility[]
+    76→    76→  preselectedFacilityId?: string
+    77→    77→}) {
+    78→    78→  const { toast } = useToast()
+    79→    79→  const [submitting, setSubmitting] = useState(false)
+    80→    80→  const [form, setForm] = useState<BookingForm>({
+    81→    81→    facilityId: preselectedFacilityId ?? '',
+    82→    82→    date: todayIso(),
+    83→    83→    startTime: '18:00',
+    84→    84→    endTime: '19:00',
+    85→    85→    customerName: '',
+    86→    86→    customerEmail: '',
+    87→    87→    customerPhone: '',
+    88→    88→    notes: '',
+    89→    89→  })
+    90→    90→
+    91→    91→  const selected = facilities.find((f) => f.id === form.facilityId)
+    92→    92→  const set = (patch: Partial<BookingForm>) => setForm((prev) => ({ ...prev, ...patch }))
+    93→    93→
+    94→    94→  // À chaque ouverture, applique le terrain préselectionné (ou réinitialise)
+    95→    95→  useEffect(() => {
+    96→    96→    if (open) {
+    97→    97→      setForm((prev) => ({ ...prev, facilityId: preselectedFacilityId ?? '' }))
+    98→    98→    }
+    99→    99→  }, [open, preselectedFacilityId])
+   100→   100→
+   101→   101→  const canSubmit =
+   102→   102→    form.facilityId &&
+   103→   103→    form.date &&
+   104→   104→    form.startTime &&
+   105→   105→    form.endTime &&
+   106→   106→    form.customerName.trim().length > 1 &&
+   107→   107→    form.endTime > form.startTime
+   108→   108→
+   109→   109→  async function handleSubmit(e: React.FormEvent) {
+   110→   110→    e.preventDefault()
+   111→   111→    if (!canSubmit || submitting) return
+   112→   112→    setSubmitting(true)
+   113→   113→    try {
+   114→   114→      const result = await apiFetch<{ reservation: { reference: string } }>('/api/reservations', {
+   115→   115→        method: 'POST',
+   116→   116→        body: {
+   117→   117→          facilityId: form.facilityId,
+   118→   118→          date: form.date,
+   119→   119→          startTime: form.startTime,
+   120→   120→          endTime: form.endTime,
+   121→   121→          customerName: form.customerName.trim(),
+   122→   122→          customerEmail: form.customerEmail.trim() || null,
+   123→   123→          customerPhone: form.customerPhone.trim() || null,
+   124→   124→          notes: form.notes.trim() || null,
+   125→   125→          source: 'PUBLIC',
+   126→   126→        },
+   127→   127→      })
+   128→   128→      toast({
+   129→   129→        title: 'Réservation envoyée ! 🎉',
+   130→   130→        description: `Référence ${result.reservation.reference}. Vous recevrez une confirmation sous 24 h.`,
+   131→   131→      })
+   132→   132→      onOpenChange(false)
+   133→   133→      setForm((prev) => ({ ...prev, customerName: '', customerEmail: '', customerPhone: '', notes: '' }))
+   134→   134→    } catch (error) {
+   135→   135→      const message = error instanceof ApiError ? error.message : 'Une erreur est survenue. Réessayez.'
+   136→   136→      toast({ title: 'Échec de la réservation', description: message, variant: 'destructive' })
+   137→   137→    } finally {
+   138→   138→      setSubmitting(false)
+   139→   139→    }
+   140→   140→  }
+   141→   141→
+   142→   142→  return (
+   143→   143→    <Dialog open={open} onOpenChange={onOpenChange}>
+   144→   144→      <DialogContent className="sm:max-w-lg zalspor-scroll max-h-[90vh] overflow-y-auto">
+   145→   145→        <DialogHeader>
+   146→   146→          <DialogTitle className="flex items-center gap-2 text-xl">
+   147→   147→            <CalendarCheck className="size-5 text-primary" />
+   148→   148→            Réserver un terrain
+   149→   149→          </DialogTitle>
+   150→   150→          <DialogDescription>
+   151→   151→            Choisissez votre terrain de football, votre créneau horaire et laissez vos coordonnées.
+   152→   152→            Confirmation sous 24 h.
+   153→   153→          </DialogDescription>
+   154→   154→        </DialogHeader>
+   155→   155→
+   156→   156→        <form onSubmit={handleSubmit} className="grid gap-4">
+   157→   157→          <div className="grid gap-2">
+   158→   158→            <Label htmlFor="booking-facility">Terrain *</Label>
+   159→   159→            <Select value={form.facilityId} onValueChange={(v) => set({ facilityId: v })}>
+   160→   160→              <SelectTrigger id="booking-facility">
+   161→   161→                <SelectValue placeholder="Sélectionnez un terrain" />
+   162→   162→              </SelectTrigger>
+   163→   163→              <SelectContent>
+   164→   164→                {facilities.map((f) => (
+   165→   165→                  <SelectItem key={f.id} value={f.id}>
+   166→   166→                    {f.name} — {formatPrice(f.pricePerHour)}/h
+   167→   167→                  </SelectItem>
+   168→   168→                ))}
+   169→   169→              </SelectContent>
+   170→   170→            </Select>
+   171→   171→          </div>
+   172→   172→
+   173→   173→          <div className="grid grid-cols-3 gap-3">
+   174→   174→            <div className="grid gap-2">
+   175→   175→              <Label htmlFor="booking-date">Date *</Label>
+   176→   176→              <Input
+   177→   177→                id="booking-date"
+   178→   178→                type="date"
+   179→   179→                min={todayIso()}
+   180→   180→                value={form.date}
+   181→   181→                onChange={(e) => set({ date: e.target.value })}
+   182→   182→                required
+   183→   183→              />
+   184→   184→            </div>
+   185→   185→            <div className="grid gap-2">
+   186→   186→              <Label htmlFor="booking-start">Début *</Label>
+   187→   187→              <Input
+   188→   188→                id="booking-start"
+   189→   189→                type="time"
+   190→   190→                value={form.startTime}
+   191→   191→                onChange={(e) => set({ startTime: e.target.value })}
+   192→   192→                required
+   193→   193→              />
+   194→   194→            </div>
+   195→   195→            <div className="grid gap-2">
+   196→   196→              <Label htmlFor="booking-end">Fin *</Label>
+   197→   197→              <Input
+   198→   198→                id="booking-end"
+   199→   199→                type="time"
+   200→   200→                value={form.endTime}
+   201→   201→                onChange={(e) => set({ endTime: e.target.value })}
+   202→   202→                required
+   203→   203→              />
+   204→   204→            </div>
+   205→   205→          </div>
+   206→   206→
+   207→   207→          <div className="grid gap-2">
+   208→   208→            <Label htmlFor="booking-name">Nom complet *</Label>
+   209→   209→            <Input
+   210→   210→              id="booking-name"
+   211→   211→              placeholder="Ex. Aïssatou Diallo"
+   212→   212→              value={form.customerName}
+   213→   213→              onChange={(e) => set({ customerName: e.target.value })}
+   214→   214→              required
+   215→   215→              minLength={2}
+   216→   216→            />
+   217→   217→          </div>
+   218→   218→
+   219→   219→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   220→   220→            <div className="grid gap-2">
+   221→   221→              <Label htmlFor="booking-email">E-mail</Label>
+   222→   222→              <Input
+   223→   223→                id="booking-email"
+   224→   224→                type="email"
+   225→   225→                placeholder="vous@exemple.com"
+   226→   226→                value={form.customerEmail}
+   227→   227→                onChange={(e) => set({ customerEmail: e.target.value })}
+   228→   228→              />
+   229→   229→            </div>
+   230→   230→            <div className="grid gap-2">
+   231→   231→              <Label htmlFor="booking-phone">Téléphone</Label>
+   232→   232→              <Input
+   233→   233→                id="booking-phone"
+   234→   234→                placeholder="+221 77 000 00 00"
+   235→   235→                value={form.customerPhone}
+   236→   236→                onChange={(e) => set({ customerPhone: e.target.value })}
+   237→   237→              />
+   238→   238→            </div>
+   239→   239→          </div>
+   240→   240→
+   241→   241→          <div className="grid gap-2">
+   242→   242→            <Label htmlFor="booking-notes">Notes (optionnel)</Label>
+   243→   243→            <Textarea
+   244→   244→              id="booking-notes"
+   245→   245→              placeholder="Précisions, équipement souhaité…"
+   246→   246→              rows={2}
+   247→   247→              value={form.notes}
+   248→   248→              onChange={(e) => set({ notes: e.target.value })}
+   249→   249→            />
+   250→   250→          </div>
+   251→   251→
+   252→   252→          {selected && (
+   253→   253→            <div className="rounded-lg bg-muted/60 border px-4 py-3 flex items-center justify-between text-sm">
+   254→   254→              <span className="text-muted-foreground flex items-center gap-2">
+   255→   255→                <Clock className="size-4" />
+   256→   256→                Tarif : <strong className="text-foreground">{formatPrice(selected.pricePerHour)}/heure</strong>
+   257→   257→              </span>
+   258→   258→              <span className="text-muted-foreground flex items-center gap-1.5">
+   259→   259→                <Users className="size-4" />
+   260→   260→                {selected.capacity} joueurs
+   261→   261→              </span>
+   262→   262→            </div>
+   263→   263→          )}
+   264→   264→
+   265→   265→          <DialogFooter className="mt-1">
+   266→   266→            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+   267→   267→              Annuler
+   268→   268→            </Button>
+   269→   269→            <Button type="submit" disabled={!canSubmit || submitting}>
+   270→   270→              {submitting ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
+   271→   271→              {submitting ? 'Envoi…' : 'Confirmer la réservation'}
+   272→   272→            </Button>
+   273→   273→          </DialogFooter>
+   274→   274→        </form>
+   275→   275→      </DialogContent>
+   276→   276→    </Dialog>
+   277→   277→  )
+   278→   278→}
+   279→   279→
+   280→   280→const fadeInUp = {
+   281→   281→  hidden: { opacity: 0, y: 24 },
+   282→   282→  visible: { opacity: 1, y: 0 },
+   283→   283→}
+   284→   284→
+   285→   285→type PublicPage = 'accueil' | 'concept' | 'apropos'
+   286→   286→
+   287→   287→const NAV_LINKS: { page: PublicPage; anchor?: string; label: string }[] = [
+   288→   288→  { page: 'accueil', anchor: 'installations', label: 'Terrains' },
+   289→   289→  { page: 'concept', label: 'Le Concept' },
+   290→   290→  { page: 'apropos', label: 'À propos' },
+   291→   291→  { page: 'accueil', anchor: 'contact', label: 'Contact' },
+   292→   292→]
+   293→   293→
+   294→   294→export function Landing({
+   295→   295→  facilities,
+   296→   296→  onOpenAdmin,
+   297→   297→}: {
+   298→   298→  facilities: Facility[]
+   299→   299→  onOpenAdmin: () => void
+   300→   300→}) {
+   301→   301→  const [page, setPage] = useState<PublicPage>('accueil')
+   302→   302→  const [bookingOpen, setBookingOpen] = useState(false)
+   303→   303→  const [preselected, setPreselected] = useState<string | undefined>()
+   304→   304→  const [navOpen, setNavOpen] = useState(false)
+   305→   305→
+   306→   306→  function openBooking(facilityId?: string) {
+   307→   307→    setPreselected(facilityId)
+   308→   308→    setBookingOpen(true)
+   309→   309→  }
+   310→   310→
+   311→   311→  function goTo(target: PublicPage, anchor?: string) {
+   312→   312→    setPage(target)
+   313→   313→    setNavOpen(false)
+   314→   314→    if (anchor) {
+   315→   315→      window.setTimeout(() => {
+   316→   316→        document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+   317→   317→      }, 120)
+   318→   318→    } else {
+   319→   319→      window.scrollTo({ top: 0, behavior: 'smooth' })
+   320→   320→    }
+   321→   321→  }
+   322→   322→
+   323→   323→  return (
+   324→   324→    <div className="min-h-screen flex flex-col bg-background">
+   325→   325→      {/* ===== Header ===== */}
+   326→   326→      <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+   327→   327→        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   328→   328→          <div className="flex h-16 items-center justify-between">
+   329→   329→            <button
+   330→   330→              type="button"
+   331→   331→              onClick={() => goTo('accueil')}
+   332→   332→              className="flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+   333→   333→              aria-label="Zalfoot, retour à l’accueil"
+   334→   334→            >
+   335→   335→              <Brand size={40} />
+   336→   336→            </button>
+   337→   337→
+   338→   338→            <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+   339→   339→              {NAV_LINKS.map((link) => (
+   340→   340→                <button
+   341→   341→                  key={link.label}
+   342→   342→                  type="button"
+   343→   343→                  className="hover:text-foreground transition-colors cursor-pointer"
+   344→   344→                  onClick={() => goTo(link.page, link.anchor)}
+   345→   345→                >
+   346→   346→                  {link.label}
+   347→   347→                </button>
+   348→   348→              ))}
+   349→   349→            </nav>
+   350→   350→
+   351→   351→            <div className="flex items-center gap-2">
+   352→   352→              <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={onOpenAdmin}>
+   353→   353→                <ShieldCheck className="size-4" />
+   354→   354→                Espace admin
+   355→   355→              </Button>
+   356→   356→              <Button size="sm" onClick={() => openBooking()}>
+   357→   357→                <CalendarCheck className="size-4" />
+   358→   358→                Réserver
+   359→   359→              </Button>
+   360→   360→              <Button
+   361→   361→                variant="ghost"
+   362→   362→                size="icon"
+   363→   363→                className="md:hidden"
+   364→   364→                aria-label="Menu"
+   365→   365→                onClick={() => setNavOpen((v) => !v)}
+   366→   366→              >
+   367→   367→                {navOpen ? '✕' : '☰'}
+   368→   368→              </Button>
+   369→   369→            </div>
+   370→   370→          </div>
+   371→   371→          {navOpen && (
+   372→   372→            <nav className="md:hidden pb-3 flex flex-col gap-1 text-sm">
+   373→   373→              {NAV_LINKS.map((link) => (
+   374→   374→                <button
+   375→   375→                  key={link.label}
+   376→   376→                  type="button"
+   377→   377→                  className="rounded-md px-3 py-2 text-left hover:bg-muted cursor-pointer"
+   378→   378→                  onClick={() => goTo(link.page, link.anchor)}
+   379→   379→                >
+   380→   380→                  {link.label}
+   381→   381→                </button>
+   382→   382→              ))}
+   383→   383→              <button
+   384→   384→                type="button"
+   385→   385→                className="rounded-md px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer"
+   386→   386→                onClick={() => {
+   387→   387→                  setNavOpen(false)
+   388→   388→                  onOpenAdmin()
+   389→   389→                }}
+   390→   390→              >
+   391→   391→                <ShieldCheck className="size-4" /> Espace admin
+   392→   392→              </button>
+   393→   393→            </nav>
+   394→   394→          )}
+   395→   395→        </div>
+   396→   396→      </header>
+   397→   397→
+   398→   398→      <main className="flex-1">
+   399→   399→        {page === 'accueil' && (
+   400→   400→          <motion.div
+   401→   401→            key="accueil"
+   402→   402→            initial="hidden"
+   403→   403→            animate="visible"
+   404→   404→            variants={fadeInUp}
+   405→   405→            transition={{ duration: 0.35 }}
+   406→   406→          >
+   407→   407→            {/* ===== Hero ===== */}
+   408→   408→            <section className="relative overflow-hidden">
+   409→   409→              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30" />
+   410→   410→              <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24">
+   411→   411→                <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+   412→   412→                  <motion.div
+   413→   413→                    initial="hidden"
+   414→   414→                    animate="visible"
+   415→   415→                    variants={fadeInUp}
+   416→   416→                    transition={{ duration: 0.5 }}
+   417→   417→                    className="flex flex-col gap-5"
+   418→   418→                  >
+   419→   419→                    <Badge className="w-fit gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+   420→   420→                      <Sparkles className="size-3.5" />
+   421→   421→                      Location de terrains de football à l&apos;heure
+   422→   422→                    </Badge>
+   423→   423→                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
+   424→   424→                      Réservez votre <span className="text-primary">terrain de football</span> en quelques clics.
+   425→   425→                    </h1>
+   426→   426→                    <p className="text-lg text-muted-foreground max-w-xl">
+   427→   427→                      Gazon entretenu, éclairage nocturne, vestiaires : consultez les disponibilités en temps
+   428→   428→                      réel et bloquez votre heure de foot en moins d&apos;une minute.
+   429→   429→                    </p>
+   430→   430→                    <div className="flex flex-col sm:flex-row gap-3">
+   431→   431→                      <Button size="lg" className="h-12 text-base" onClick={() => openBooking()}>
+   432→   432→                        <CalendarCheck className="size-5" />
+   433→   433→                        Réserver maintenant
+   434→   434→                      </Button>
+   435→   435→                      <Button size="lg" variant="outline" className="h-12 text-base" onClick={onOpenAdmin}>
+   436→   436→                        <ShieldCheck className="size-5" />
+   437→   437→                        Espace admin
+   438→   438→                      </Button>
+   439→   439→                    </div>
+   440→   440→
+   441→   441→                    <dl className="grid grid-cols-3 gap-4 pt-6 mt-2 border-t">
+   442→   442→                      {[
+   443→   443→                        { k: String(facilities.length || 3), v: 'Terrains de football' },
+   444→   444→                        { k: '7j/7', v: 'De 6 h à 23 h' },
+   445→   445→                        { k: '98%', v: 'Joueurs satisfaits' },
+   446→   446→                      ].map((s) => (
+   447→   447→                        <div key={s.v} className="flex flex-col">
+   448→   448→                          <dt className="text-2xl sm:text-3xl font-extrabold text-primary">{s.k}</dt>
+   449→   449→                          <dd className="text-sm text-muted-foreground">{s.v}</dd>
+   450→   450→                        </div>
+   451→   451→                      ))}
+   452→   452→                    </dl>
+   453→   453→                  </motion.div>
+   454→   454→
+   455→   455→                  <motion.div
+   456→   456→                    initial={{ opacity: 0, scale: 0.96 }}
+   457→   457→                    animate={{ opacity: 1, scale: 1 }}
+   458→   458→                    transition={{ duration: 0.6, delay: 0.15 }}
+   459→   459→                    className="relative"
+   460→   460→                  >
+   461→   461→                    <div className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 aspect-[2/1]">
+   462→   462→                      <Image
+   463→   463→                        src="/hero-football.png"
+   464→   464→                        alt="Terrain de football de Zalfoot, pelouse verte balisée avec buts et projecteurs"
+   465→   465→                        fill
+   466→   466→                        priority
+   467→   467→                        sizes="(max-width: 1024px) 100vw, 50vw"
+   468→   468→                        className="object-cover"
+   469→   469→                      />
+   470→   470→                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+   471→   471→                    </div>
+   472→   472→                    <div className="absolute -bottom-5 left-5 right-5 sm:left-8 sm:right-auto">
+   473→   473→                      <Card className="shadow-lg border-emerald-100">
+   474→   474→                        <CardContent className="flex items-center gap-3 py-3 px-4">
+   475→   475→                          <span className="flex size-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+   476→   476→                            <Users className="size-5" />
+   477→   477→                          </span>
+   478→   478→                          <div>
+   479→   479→                            <p className="text-sm font-semibold leading-none">+1 200 joueurs / mois</p>
+   480→   480→                            <p className="text-xs text-muted-foreground mt-1">nous font confiance</p>
+   481→   481→                          </div>
+   482→   482→                        </CardContent>
+   483→   483→                      </Card>
+   484→   484→                    </div>
+   485→   485→                  </motion.div>
+   486→   486→                </div>
+   487→   487→              </div>
+   488→   488→            </section>
+   489→   489→
+   490→   490→            {/* ===== Terrains ===== */}
+   491→   491→            <section id="installations" className="py-14 sm:py-20 bg-muted/40 border-y">
+   492→   492→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   493→   493→                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+   494→   494→                  <div>
+   495→   495→                    <h2 className="text-3xl font-extrabold tracking-tight">Nos terrains de football</h2>
+   496→   496→                    <p className="text-muted-foreground mt-2 max-w-2xl">
+   497→   497→                      Pelouses entretenues quotidiennement, buts avec filets, vestiaires et éclairage
+   498→   498→                      nocturne. Ouverts de 6 h à 23 h, 7 jours sur 7.
+   499→   499→                    </p>
+   500→   500→                  </div>
+   501→   501→                  <Badge variant="outline" className="w-fit gap-1.5">
+   502→   502→                    <MapPin className="size-3.5" /> Route de l&apos;Aéroport, Dakar
+   503→   503→                  </Badge>
+   504→   504→                </div>
+   505→   505→
+   506→   506→                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+   507→   507→                  {facilities.map((f, i) => (
+   508→   508→                    <motion.div
+   509→   509→                      key={f.id}
+   510→   510→                      initial="hidden"
+   511→   511→                      whileInView="visible"
+   512→   512→                      viewport={{ once: true, margin: '-50px' }}
+   513→   513→                      variants={fadeInUp}
+   514→   514→                      transition={{ duration: 0.4, delay: (i % 3) * 0.08 }}
+   515→   515→                    >
+   516→   516→                      <Card className="h-full flex flex-col overflow-hidden hover:shadow-lg hover:border-primary/40 transition-all group">
+   517→   517→                        <CardHeader className="pb-3">
+   518→   518→                          <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+   519→   519→                            <Trophy className="size-6" />
+   520→   520→                          </span>
+   521→   521→                          <h3 className="text-lg font-bold leading-snug mt-3">{f.name}</h3>
+   522→   522→                        </CardHeader>
+   523→   523→                        <CardContent className="pb-3 flex-1">
+   524→   524→                          <p className="text-sm text-muted-foreground line-clamp-2">{f.description}</p>
+   525→   525→                          <div className="flex items-center gap-4 mt-4 text-sm">
+   526→   526→                            <span className="flex items-center gap-1.5 text-foreground font-semibold">
+   527→   527→                              <Clock className="size-4 text-primary" />
+   528→   528→                              {formatPrice(f.pricePerHour)}/h
+   529→   529→                            </span>
+   530→   530→                            <span className="flex items-center gap-1.5 text-muted-foreground">
+   531→   531→                              <Users className="size-4" />
+   532→   532→                              {f.capacity} joueurs
+   533→   533→                            </span>
+   534→   534→                          </div>
+   535→   535→                        </CardContent>
+   536→   536→                        <CardFooter>
+   537→   537→                          <Button
+   538→   538→                            className="w-full"
+   539→   539→                            variant={i % 2 === 0 ? 'default' : 'outline'}
+   540→   540→                            onClick={() => openBooking(f.id)}
+   541→   541→                            disabled={!f.active}
+   542→   542→                          >
+   543→   543→                            <CalendarCheck className="size-4" />
+   544→   544→                            {f.active ? 'Réserver ce terrain' : 'Indisponible'}
+   545→   545→                          </Button>
+   546→   546→                        </CardFooter>
+   547→   547→                      </Card>
+   548→   548→                    </motion.div>
+   549→   549→                  ))}
+   550→   550→                </div>
+   551→   551→              </div>
+   552→   552→            </section>
+   553→   553→
+   554→   554→            {/* ===== Fonctionnement ===== */}
+   555→   555→            <section id="fonctionnement" className="py-14 sm:py-20">
+   556→   556→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   557→   557→                <h2 className="text-3xl font-extrabold tracking-tight text-center">Comment ça marche ?</h2>
+   558→   558→                <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
+   559→   559→                  Trois étapes suffisent pour jouer.
+   560→   560→                </p>
+   561→   561→                <div className="grid gap-6 sm:grid-cols-3 mt-10">
+   562→   562→                  {[
+   563→   563→                    { n: '1', icon: CalendarCheck, t: 'Choisissez votre créneau', d: 'Sélectionnez le terrain, la date et l’heure de votre match.' },
+   564→   564→                    { n: '2', icon: CheckCircle2, t: 'Confirmez votre demande', d: 'Laissez vos coordonnées : notre équipe valide sous 24 heures.' },
+   565→   565→                    { n: '3', icon: Trophy, t: 'Jouez !', d: 'Présentez votre référence à l’accueil et profitez de votre heure de foot.' },
+   566→   566→                  ].map((step) => (
+   567→   567→                    <Card key={step.n} className="relative overflow-hidden">
+   568→   568→                      <span className="absolute -top-3 -right-1 text-7xl font-black text-primary/5 select-none">
+   569→   569→                        {step.n}
+   570→   570→                      </span>
+   571→   571→                      <CardContent className="pt-6 flex flex-col items-start gap-3">
+   572→   572→                        <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+   573→   573→                          <step.icon className="size-6" />
+   574→   574→                        </span>
+   575→   575→                        <h3 className="font-bold text-lg">{step.t}</h3>
+   576→   576→                        <p className="text-sm text-muted-foreground">{step.d}</p>
+   577→   577→                      </CardContent>
+   578→   578→                    </Card>
+   579→   579→                  ))}
+   580→   580→                </div>
+   581→   581→              </div>
+   582→   582→            </section>
+   583→   583→
+   584→   584→            {/* ===== Contact / CTA ===== */}
+   585→   585→            <section id="contact" className="pb-14 sm:pb-20">
+   586→   586→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   587→   587→                <Card className="bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground border-0 overflow-hidden">
+   588→   588→                  <CardContent className="py-10 px-6 sm:px-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+   589→   589→                    <div>
+   590→   590→                      <h2 className="text-2xl sm:text-3xl font-extrabold">Prêt à jouer ce week-end ?</h2>
+   591→   591→                      <p className="mt-2 text-primary-foreground/85 max-w-lg">
+   592→   592→                        Réservez votre heure de foot en ligne maintenant, ou appelez-nous 7 j/7 de 8 h à 20 h.
+   593→   593→                      </p>
+   594→   594→                    </div>
+   595→   595→                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+   596→   596→                      <Button size="lg" variant="secondary" className="h-12" onClick={() => openBooking()}>
+   597→   597→                        <CalendarCheck className="size-5" />
+   598→   598→                        Réserver maintenant
+   599→   599→                      </Button>
+   600→   600→                      <div className="flex flex-col gap-1 text-sm text-primary-foreground/90 pl-1">
+   601→   601→                        <span className="flex items-center gap-2"><Phone className="size-4" /> +221 33 800 00 00</span>
+   602→   602→                        <span className="flex items-center gap-2"><Mail className="size-4" /> contact@zalfoot.com</span>
+   603→   603→                      </div>
+   604→   604→                    </div>
+   605→   605→                  </CardContent>
+   606→   606→                </Card>
+   607→   607→              </div>
+   608→   608→            </section>
+   609→   609→          </motion.div>
+   610→   610→        )}
+   611→   611→
+   612→   612→        {page === 'concept' && (
+   613→   613→          <motion.div
+   614→   614→            key="concept"
+   615→   615→            initial="hidden"
+   616→   616→            animate="visible"
+   617→   617→            variants={fadeInUp}
+   618→   618→            transition={{ duration: 0.35 }}
+   619→   619→          >
+   620→   620→            {/* En-tête du concept */}
+   621→   621→            <section className="relative overflow-hidden border-b">
+   622→   622→              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30" />
+   623→   623→              <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+   624→   624→                <div className="max-w-3xl">
+   625→   625→                  <Badge className="w-fit gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+   626→   626→                    <Target className="size-3.5" />
+   627→   627→                    Notre concept
+   628→   628→                  </Badge>
+   629→   629→                  <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mt-5 leading-[1.1]">
+   630→   630→                    Le foot à l&apos;heure, <span className="text-primary">sans complication.</span>
+   631→   631→                  </h1>
+   632→   632→                  <p className="text-lg text-muted-foreground mt-5 max-w-2xl">
+   633→   633→                    Zalfoot fait une seule chose, et la fait bien : louer des terrains de football à
+   634→   634→                    l&apos;heure. Pas d&apos;abonnement, pas de frais cachés — vous choisissez un créneau,
+   635→   635→                    vous jouez.
+   636→   636→                  </p>
+   637→   637→                </div>
+   638→   638→              </div>
+   639→   639→            </section>
+   640→   640→
+   641→   641→            {/* Les 3 piliers */}
+   642→   642→            <section className="py-14 sm:py-16">
+   643→   643→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   644→   644→                <h2 className="text-3xl font-extrabold tracking-tight text-center">Ce qui change pour vous</h2>
+   645→   645→                <div className="grid gap-6 sm:grid-cols-3 mt-10">
+   646→   646→                  {[
+   647→   647→                    {
+   648→   648→                      icon: CalendarCheck,
+   649→   649→                      t: 'Réservation en 1 minute',
+   650→   650→                      d: 'Les disponibilités sont visibles en temps réel. Vous bloquez votre heure en ligne, à toute heure du jour ou de la nuit.',
+   651→   651→                    },
+   652→   652→                    {
+   653→   653→                      icon: BadgeCheck,
+   654→   654→                      t: 'Prix transparents',
+   655→   655→                      d: 'Un tarif clair, affiché à l’heure, identique en ligne et sur place. Vous savez exactement ce que vous payez avant de venir.',
+   656→   656→                    },
+   657→   657→                    {
+   658→   658→                      icon: Trophy,
+   659→   659→                      t: 'Terrains prêts à jouer',
+   660→   660→                      d: 'Gazon entretenu quotidiennement, buts et filets en place, vestiaires, douches et éclairage nocturne. Vous n’apportez que le ballon.',
+   661→   661→                    },
+   662→   662→                  ].map((p) => (
+   663→   663→                    <Card key={p.t} className="h-full">
+   664→   664→                      <CardContent className="pt-6 flex flex-col items-start gap-3">
+   665→   665→                        <span className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+   666→   666→                          <p.icon className="size-6" />
+   667→   667→                        </span>
+   668→   668→                        <h3 className="font-bold text-lg">{p.t}</h3>
+   669→   669→                        <p className="text-sm text-muted-foreground">{p.d}</p>
+   670→   670→                      </CardContent>
+   671→   671→                    </Card>
+   672→   672→                  ))}
+   673→   673→                </div>
+   674→   674→              </div>
+   675→   675→            </section>
+   676→   676→
+   677→   677→            {/* Pour qui */}
+   678→   678→            <section className="py-14 sm:py-16 bg-muted/40 border-y">
+   679→   679→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   680→   680→                <h2 className="text-3xl font-extrabold tracking-tight text-center">Pour qui ?</h2>
+   681→   681→                <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
+   682→   682→                  Le concept s&apos;adapte à toutes les envies de foot.
+   683→   683→                </p>
+   684→   684→                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 mt-10">
+   685→   685→                  {[
+   686→   686→                    { icon: Users, t: 'Équipes amicales', d: 'Le match du week-end entre voisins ou collègues, programmé en deux clics.' },
+   687→   687→                    { icon: Flame, t: 'Fans de five', d: 'Le petit terrain 5v5 pour l’entre-soirée, sans chercher qui garde le créneau.' },
+   688→   688→                    { icon: Trophy, t: 'Tournois & sociétés', d: 'Des heures consécutives pour vos tournois corporatifs et compétitions amicales.' },
+   689→   689→                    { icon: GraduationCap, t: 'Écoles & académies', d: 'Des créneaux réguliers pour les entraînements et cours d’EPS.' },
+   690→   690→                  ].map((a) => (
+   691→   691→                    <Card key={a.t} className="h-full">
+   692→   692→                      <CardContent className="pt-6 flex flex-col items-start gap-3">
+   693→   693→                        <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+   694→   694→                          <a.icon className="size-5" />
+   695→   695→                        </span>
+   696→   696→                        <h3 className="font-bold">{a.t}</h3>
+   697→   697→                        <p className="text-sm text-muted-foreground">{a.d}</p>
+   698→   698→                      </CardContent>
+   699→   699→                    </Card>
+   700→   700→                  ))}
+   701→   701→                </div>
+   702→   702→              </div>
+   703→   703→            </section>
+   704→   704→
+   705→   705→            {/* Tarifs */}
+   706→   706→            <section className="py-14 sm:py-16">
+   707→   707→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   708→   708→                <h2 className="text-3xl font-extrabold tracking-tight text-center">Nos tarifs à l&apos;heure</h2>
+   709→   709→                <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
+   710→   710→                  Le prix affiché est le prix payé. Réservation en ligne ou à l&apos;accueil, c&apos;est le même.
+   711→   711→                </p>
+   712→   712→                <div className="grid gap-5 sm:grid-cols-3 mt-10 max-w-4xl mx-auto">
+   713→   713→                  {facilities.map((f) => (
+   714→   714→                    <Card key={f.id} className="h-full flex flex-col">
+   715→   715→                      <CardHeader className="pb-3">
+   716→   716→                        <h3 className="font-bold leading-snug">{f.name}</h3>
+   717→   717→                      </CardHeader>
+   718→   718→                      <CardContent className="pb-3 flex-1">
+   719→   719→                        <p className="text-sm text-muted-foreground line-clamp-2">{f.description}</p>
+   720→   720→                        <p className="text-3xl font-extrabold text-primary mt-4">
+   721→   721→                          {formatPrice(f.pricePerHour)}
+   722→   722→                          <span className="text-sm font-medium text-muted-foreground"> /heure</span>
+   723→   723→                        </p>
+   724→   724→                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+   725→   725→                          <Users className="size-3.5" /> jusqu&apos;à {f.capacity} joueurs
+   726→   726→                        </p>
+   727→   727→                      </CardContent>
+   728→   728→                      <CardFooter>
+   729→   729→                        <Button
+   730→   730→                          className="w-full"
+   731→   731→                          variant="outline"
+   732→   732→                          onClick={() => openBooking(f.id)}
+   733→   733→                          disabled={!f.active}
+   734→   734→                        >
+   735→   735→                          <CalendarCheck className="size-4" />
+   736→   736→                          Réserver
+   737→   737→                        </Button>
+   738→   738→                      </CardFooter>
+   739→   739→                    </Card>
+   740→   740→                  ))}
+   741→   741→                </div>
+   742→   742→              </div>
+   743→   743→            </section>
+   744→   744→
+   745→   745→            {/* CTA */}
+   746→   746→            <section className="pb-14 sm:pb-20">
+   747→   747→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   748→   748→                <Card className="bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground border-0 overflow-hidden">
+   749→   749→                  <CardContent className="py-10 px-6 sm:px-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+   750→   750→                    <div>
+   751→   751→                      <h2 className="text-2xl sm:text-3xl font-extrabold">Envie de tester le concept ?</h2>
+   752→   752→                      <p className="mt-2 text-primary-foreground/85 max-w-lg">
+   753→   753→                        Réservez votre première heure de foot et jugez par vous-même.
+   754→   754→                      </p>
+   755→   755→                    </div>
+   756→   756→                    <Button size="lg" variant="secondary" className="h-12" onClick={() => openBooking()}>
+   757→   757→                      <CalendarCheck className="size-5" />
+   758→   758→                      Réserver un terrain
+   759→   759→                    </Button>
+   760→   760→                  </CardContent>
+   761→   761→                </Card>
+   762→   762→              </div>
+   763→   763→            </section>
+   764→   764→          </motion.div>
+   765→   765→        )}
+   766→   766→
+   767→   767→        {page === 'apropos' && (
+   768→   768→          <motion.div
+   769→   769→            key="apropos"
+   770→   770→            initial="hidden"
+   771→   771→            animate="visible"
+   772→   772→            variants={fadeInUp}
+   773→   773→            transition={{ duration: 0.35 }}
+   774→   774→          >
+   775→   775→            {/* En-tête */}
+   776→   776→            <section className="relative overflow-hidden border-b">
+   777→   777→              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30" />
+   778→   778→              <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+   779→   779→                <div className="max-w-3xl">
+   780→   780→                  <Badge className="w-fit gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+   781→   781→                    <Sparkles className="size-3.5" />
+   782→   782→                    À propos
+   783→   783→                  </Badge>
+   784→   784→                  <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mt-5 leading-[1.1]">
+   785→   785→                    Zalfoot, <span className="text-primary">le foot d&apos;abord.</span>
+   786→   786→                  </h1>
+   787→   787→                  <p className="text-lg text-muted-foreground mt-5 max-w-2xl">
+   788→   788→                    Née de la passion du ballon à Dakar, Zalfoot met la location de terrains de football
+   789→   789→                    à portée de clic, pour que l&apos;envie de jouer ne dépende plus jamais d&apos;un coup de
+   790→   790→                    fil compliqué.
+   791→   791→                  </p>
+   792→   792→                </div>
+   793→   793→              </div>
+   794→   794→            </section>
+   795→   795→
+   796→   796→            {/* Histoire */}
+   797→   797→            <section className="py-14 sm:py-16">
+   798→   798→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   799→   799→                <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+   800→   800→                  <div className="relative rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5 aspect-[4/3] order-2 lg:order-1">
+   801→   801→                    <Image
+   802→   802→                      src="/hero-football.png"
+   803→   803→                      alt="Terrain de football de Zalfoot au coucher du soleil"
+   804→   804→                      fill
+   805→   805→                      sizes="(max-width: 1024px) 100vw, 50vw"
+   806→   806→                      className="object-cover"
+   807→   807→                    />
+   808→   808→                    <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+   809→   809→                  </div>
+   810→   810→                  <div className="order-1 lg:order-2">
+   811→   811→                    <h2 className="text-3xl font-extrabold tracking-tight">Notre histoire</h2>
+   812→   812→                    <div className="mt-4 flex flex-col gap-4 text-muted-foreground">
+   813→   813→                      <p>
+   814→   814→                        Zalfoot est partie d&apos;un constat simple : à Dakar, trouver un terrain de
+   815→   815→                        football au bon créneau relevait souvent du parcours du combattant — appels,
+   816→   816→                        allers-retours, créneaux doubles…
+   817→   817→                      </p>
+   818→   818→                      <p>
+   819→   819→                        Nous avons donc construit une plateforme qui fait une seule chose :
+   820→   820→                        afficher les disponibilités de nos terrains en temps réel et permettre à
+   821→   821→                        chacun de bloquer une heure en quelques clics, à n&apos;importe quelle heure.
+   822→   822→                      </p>
+   823→   823→                      <p>
+   824→   824→                        Aujourd&apos;hui, des centaines d&apos;équipes, d&apos;amis et d&apos;académies
+   825→   825→                        jouent chaque semaine sur nos pelouses — et nous entretenons chaque terrain
+   826→   826→                        comme si notre propre match s&apos;y jouait le soir.
+   827→   827→                      </p>
+   828→   828→                    </div>
+   829→   829→                    <dl className="grid grid-cols-3 gap-4 pt-6 mt-6 border-t">
+   830→   830→                      {[
+   831→   831→                        { k: String(facilities.length || 3), v: 'Terrains' },
+   832→   832→                        { k: '+1 200', v: 'Joueurs / mois' },
+   833→   833→                        { k: '7j/7', v: 'Ouverture' },
+   834→   834→                      ].map((s) => (
+   835→   835→                        <div key={s.v} className="flex flex-col">
+   836→   836→                          <dt className="text-2xl sm:text-3xl font-extrabold text-primary">{s.k}</dt>
+   837→   837→                          <dd className="text-sm text-muted-foreground">{s.v}</dd>
+   838→   838→                        </div>
+   839→   839→                      ))}
+   840→   840→                    </dl>
+   841→   841→                  </div>
+   842→   842→                </div>
+   843→   843→              </div>
+   844→   844→            </section>
+   845→   845→
+   846→   846→            {/* Mission + valeurs */}
+   847→   847→            <section className="py-14 sm:py-16 bg-muted/40 border-y">
+   848→   848→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   849→   849→                <Card className="bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground border-0">
+   850→   850→                  <CardContent className="py-8 px-6 sm:px-10 flex items-start gap-4">
+   851→   851→                    <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary-foreground/15">
+   852→   852→                      <Target className="size-6" />
+   853→   853→                    </span>
+   854→   854→                    <div>
+   855→   855→                      <h2 className="text-xl sm:text-2xl font-extrabold">Notre mission</h2>
+   856→   856→                      <p className="mt-2 text-primary-foreground/85 max-w-2xl">
+   857→   857→                        Rendre le football accessible à tous, à toute heure : des terrains toujours prêts,
+   858→   858→                        des créneaux clairs et une réservation qui prend moins d&apos;une minute.
+   859→   859→                      </p>
+   860→   860→                    </div>
+   861→   861→                  </CardContent>
+   862→   862→                </Card>
+   863→   863→
+   864→   864→                <div className="grid gap-6 sm:grid-cols-3 mt-8">
+   865→   865→                  {[
+   866→   866→                    { icon: Zap, t: 'Simplicité', d: 'Une heure, un terrain, trois clics. Zéro paperasse, zéro attente.' },
+   867→   867→                    { icon: BadgeCheck, t: 'Transparence', d: 'Un tarif unique à l’heure, annoncé et appliqué, sans surprise.' },
+   868→   868→                    { icon: Heart, t: 'Passion', d: 'Nous sommes des joueurs avant d’être des loueurs : le terrain est toujours impeccable.' },
+   869→   869→                  ].map((v) => (
+   870→   870→                    <Card key={v.t}>
+   871→   871→                      <CardContent className="pt-6 flex flex-col items-start gap-3">
+   872→   872→                        <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+   873→   873→                          <v.icon className="size-5" />
+   874→   874→                        </span>
+   875→   875→                        <h3 className="font-bold text-lg">{v.t}</h3>
+   876→   876→                        <p className="text-sm text-muted-foreground">{v.d}</p>
+   877→   877→                      </CardContent>
+   878→   878→                    </Card>
+   879→   879→                  ))}
+   880→   880→                </div>
+   881→   881→              </div>
+   882→   882→            </section>
+   883→   883→
+   884→   884→            {/* Contact */}
+   885→   885→            <section className="py-14 sm:py-16">
+   886→   886→              <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+   887→   887→                <h2 className="text-3xl font-extrabold tracking-tight text-center">Venez nous rencontrer</h2>
+   888→   888→                <p className="text-muted-foreground text-center mt-2 max-w-xl mx-auto">
+   889→   889→                  Une question, un projet de tournoi, un créneau régulier ? Écrivez-nous ou passez
+   890→   890→                  nous voir.
+   891→   891→                </p>
+   892→   892→                <div className="grid gap-5 sm:grid-cols-3 mt-10 max-w-4xl mx-auto">
+   893→   893→                  {[
+   894→   894→                    { icon: MapPin, t: 'Adresse', d: 'Route de l’Aéroport, Dakar, Sénégal' },
+   895→   895→                    { icon: Phone, t: 'Téléphone', d: '+221 33 800 00 00' },
+   896→   896→                    { icon: Mail, t: 'E-mail', d: 'contact@zalfoot.com' },
+   897→   897→                  ].map((c) => (
+   898→   898→                    <Card key={c.t} className="text-center">
+   899→   899→                      <CardContent className="pt-6 flex flex-col items-center gap-2">
+   900→   900→                        <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+   901→   901→                          <c.icon className="size-5" />
+   902→   902→                        </span>
+   903→   903→                        <h3 className="font-bold">{c.t}</h3>
+   904→   904→                        <p className="text-sm text-muted-foreground">{c.d}</p>
+   905→   905→                      </CardContent>
+   906→   906→                    </Card>
+   907→   907→                  ))}
+   908→   908→                </div>
+   909→   909→                <div className="flex justify-center mt-10">
+   910→   910→                  <Button size="lg" className="h-12 text-base" onClick={() => openBooking()}>
+   911→   911→                    <CalendarCheck className="size-5" />
+   912→   912→                    Réserver un terrain
+   913→   913→                  </Button>
+   914→   914→                </div>
+   915→   915→              </div>
+   916→   916→            </section>
+   917→   917→          </motion.div>
+   918→   918→        )}
+   919→   919→      </main>
+   920→   920→
+   921→   921→      {/* ===== Footer (sticky) ===== */}
+   922→   922→      <footer className="mt-auto border-t bg-muted/40">
+   923→   923→        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+   924→   924→          <div className="flex items-center gap-2.5">
+   925→   925→            <Brand size={28} />
+   926→   926→            <span>© {new Date().getFullYear()}</span>
+   927→   927→          </div>
+   928→   928→          <nav className="flex items-center gap-4">
+   929→   929→            {NAV_LINKS.map((link) => (
+   930→   930→              <button
+   931→   931→                key={link.label}
+   932→   932→                type="button"
+   933→   933→                className="hover:text-foreground transition-colors cursor-pointer"
+   934→   934→                onClick={() => goTo(link.page, link.anchor)}
+   935→   935→              >
+   936→   936→                {link.label}
+   937→   937→              </button>
+   938→   938→            ))}
+   939→   939→          </nav>
+   940→   940→          <p>Location de terrains de football à l&apos;heure — Dakar, Sénégal</p>
+   941→   941→        </div>
+   942→   942→      </footer>
+   943→   943→
+   944→   944→      <BookingDialog
+   945→   945→        open={bookingOpen}
+   946→   946→        onOpenChange={setBookingOpen}
+   947→   947→        facilities={facilities.filter((f) => f.active)}
+   948→   948→        preselectedFacilityId={preselected}
+   949→   949→      />
+   950→   950→    </div>
+   951→   951→  )
+   952→   952→}
+   953→   953→

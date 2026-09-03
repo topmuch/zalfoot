@@ -50,9 +50,9 @@ export function AdminLogin({
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/30 dark:via-background dark:to-teal-950/20">
       <header className="border-b bg-background/85 backdrop-blur">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Brand size={40} />
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Brand size={80} />
           </div>
           <Button variant="ghost" size="sm" onClick={onBack}>
             <ArrowLeft className="size-4" />

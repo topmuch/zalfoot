@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Activity,
   CalendarDays,
@@ -9,29 +9,42 @@ import {
   LogOut,
   MapPin,
   ShieldCheck,
+  Wallet,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 import { apiFetch, setToken } from './api'
 import { Brand } from './brand'
-import type { Admin, CalendarEvent, Facility, Reservation, Stats } from './types'
+import { formatDateFr, type Admin, type CalendarEvent, type Facility, type Reservation, type Stats } from './types'
 import { OverviewSection } from './overview-section'
 import { ReservationsSection } from './reservations-section'
 import { CalendarSection } from './calendar-section'
 import { AdminsSection } from './admins-section'
 import { FacilitiesSection } from './facilities-section'
+import { PaymentSection } from './payment-section'
 
-export type DashboardSection = 'overview' | 'reservations' | 'calendar' | 'facilities' | 'admins'
+export type DashboardSection = 'overview' | 'reservations' | 'calendar' | 'facilities' | 'payment' | 'admins'
 
 const NAV_ITEMS: { id: DashboardSection; label: string; icon: typeof LayoutDashboard; mobileLabel: string }[] = [
   { id: 'overview', label: 'Vue d’ensemble', icon: LayoutDashboard, mobileLabel: 'Vue' },
   { id: 'reservations', label: 'Réservations', icon: CalendarPlus, mobileLabel: 'Résas' },
   { id: 'calendar', label: 'Calendrier', icon: CalendarDays, mobileLabel: 'Agenda' },
   { id: 'facilities', label: 'Terrains', icon: MapPin, mobileLabel: 'Terrains' },
+  { id: 'payment', label: 'Paiement', icon: Wallet, mobileLabel: 'Paiement' },
   { id: 'admins', label: 'Administrateurs', icon: ShieldCheck, mobileLabel: 'Admins' },
 ]
+
+/** Intervalle de synchronisation automatique du dashboard (10 secondes). */
+const POLL_INTERVAL_MS = 10_000
+
+/** Heure locale au format HH:mm:ss (ex. 17:42:10). */
+function formatSyncTime(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
 
 export function AdminDashboard({
   currentAdmin,
@@ -42,6 +55,7 @@ export function AdminDashboard({
   onLogout: () => void
   onUnauthorized: () => void
 }) {
+  const { toast } = useToast()
   const [section, setSection] = useState<DashboardSection>('overview')
 
   // Données
@@ -52,35 +66,97 @@ export function AdminDashboard({
   const [admins, setAdmins] = useState<Admin[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null)
 
-  const loadAll = useCallback(async () => {
-    setRefreshing(true)
-    try {
-      const [statsData, reservationsData, eventsData, facilitiesData, adminsData] = await Promise.all([
-        apiFetch<Stats>('/api/stats', { auth: true }),
-        apiFetch<Reservation[]>('/api/reservations', { auth: true }),
-        apiFetch<CalendarEvent[]>('/api/calendar', { auth: true }),
-        apiFetch<Facility[]>('/api/facilities'),
-        apiFetch<Admin[]>('/api/admins', { auth: true }),
-      ])
-      setStats(statsData)
-      setReservations(reservationsData)
-      setEvents(eventsData)
-      setFacilities(facilitiesData)
-      setAdmins(adminsData)
-    } catch (error) {
-      if (error instanceof Error && 'status' in error && (error as { status: number }).status === 401) {
-        onUnauthorized()
+  // Référentiel des ids de réservations déjà connus (détection des nouveautés)
+  const knownReservationIdsRef = useRef<Set<string> | null>(null)
+
+  /**
+   * Charge toutes les données du dashboard.
+   * `announceNew` : affiche un toast pour les réservations apparues depuis le
+   * chargement précédent (utilisé par le polling et le retour d'onglet).
+   */
+  const loadAll = useCallback(
+    async (options: { announceNew?: boolean } = {}) => {
+      setRefreshing(true)
+      try {
+        const [statsData, reservationsData, eventsData, facilitiesData, adminsData] = await Promise.all([
+          apiFetch<Stats>('/api/stats', { auth: true }),
+          apiFetch<Reservation[]>('/api/reservations', { auth: true }),
+          apiFetch<CalendarEvent[]>('/api/calendar', { auth: true }),
+          apiFetch<Facility[]>('/api/facilities'),
+          apiFetch<Admin[]>('/api/admins', { auth: true }),
+        ])
+
+        // Détection des nouvelles réservations : ids absents du lot précédent.
+        // Pas de toast au premier chargement ni quand le total diminue (suppression).
+        const previousIds = knownReservationIdsRef.current
+        if (previousIds !== null && options.announceNew && reservationsData.length >= previousIds.size) {
+          const newOnes = reservationsData.filter((r) => !previousIds.has(r.id))
+          if (newOnes.length === 1) {
+            const r = newOnes[0]
+            toast({
+              title: 'Nouvelle réservation reçue 🎉',
+              description: `${r.customerName} — ${formatDateFr(r.date)} ${r.startTime}`,
+            })
+          } else if (newOnes.length > 1) {
+            const extra = newOnes.length - 2
+            toast({
+              title: `${newOnes.length} nouvelles réservations reçues 🎉`,
+              description:
+                newOnes
+                  .slice(0, 2)
+                  .map((r) => `${r.customerName} — ${formatDateFr(r.date)} ${r.startTime}`)
+                  .join(' · ') + (extra > 0 ? ` · et ${extra} autre${extra > 1 ? 's' : ''}` : ''),
+            })
+          }
+        }
+        knownReservationIdsRef.current = new Set(reservationsData.map((r) => r.id))
+
+        setStats(statsData)
+        setReservations(reservationsData)
+        setEvents(eventsData)
+        setFacilities(facilitiesData)
+        setAdmins(adminsData)
+        setLastSyncTime(formatSyncTime(new Date()))
+      } catch (error) {
+        if (error instanceof Error && 'status' in error && (error as { status: number }).status === 401) {
+          onUnauthorized()
+        }
+      } finally {
+        setLoading(false)
+        setRefreshing(false)
       }
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }, [onUnauthorized])
+    },
+    [onUnauthorized, toast]
+  )
 
-  // Charger les données au montage
+  // Chargement initial
   useEffect(() => {
     loadAll()
+  }, [loadAll])
+
+  // Synchronisation automatique toutes les 10 secondes (nettoyée au démontage)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadAll({ announceNew: true })
+    }, POLL_INTERVAL_MS)
+    return () => clearInterval(interval)
+  }, [loadAll])
+
+  // Rafraîchissement immédiat quand l'onglet redevient visible ou reprend le focus
+  useEffect(() => {
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadAll({ announceNew: true })
+      }
+    }
+    document.addEventListener('visibilitychange', refreshIfVisible)
+    window.addEventListener('focus', refreshIfVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', refreshIfVisible)
+      window.removeEventListener('focus', refreshIfVisible)
+    }
   }, [loadAll])
 
   function handleLogout() {
@@ -101,15 +177,20 @@ export function AdminDashboard({
       {/* ===== Barre supérieure ===== */}
       <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <Brand size={40} subtitle="Dashboard administrateur" />
+          <div className="flex h-24 items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Brand size={80} subtitle="Dashboard administrateur" />
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              <Badge variant="outline" className="hidden md:inline-flex gap-1.5">
-                <Activity className="size-3 text-primary" />
-                {refreshing ? 'Synchronisation…' : 'En ligne'}
+              <Badge variant="outline" className="hidden md:inline-flex gap-1.5 tabular-nums">
+                <Activity className={cn('size-3 text-primary', refreshing && 'animate-pulse')} />
+                Temps réel
+                {lastSyncTime ? (
+                  <span key={lastSyncTime} className="font-normal text-muted-foreground">
+                    · Auto-sync {lastSyncTime}
+                  </span>
+                ) : null}
               </Badge>
               <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l">
                 <Avatar className="size-8 border">
@@ -154,7 +235,7 @@ export function AdminDashboard({
       <div className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex gap-8">
         {/* ===== Sidebar (desktop) ===== */}
         <aside className="hidden lg:block w-56 shrink-0">
-          <div className="sticky top-24 flex flex-col gap-1">
+          <div className="sticky top-28 flex flex-col gap-1">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pb-2">
               Gestion
             </p>
@@ -227,6 +308,7 @@ export function AdminDashboard({
               onUnauthorized={onUnauthorized}
             />
           )}
+          {section === 'payment' && <PaymentSection onUnauthorized={onUnauthorized} />}
           {section === 'admins' && (
             <AdminsSection
               admins={admins}

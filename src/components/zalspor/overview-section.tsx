@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   CalendarDays,
   CheckCircle2,
+  CircleDollarSign,
   Clock,
   Hourglass,
   Plus,
@@ -25,7 +26,16 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { RESERVATION_STATUS_META, formatDateFr, formatPrice, type Admin, type Facility, type Stats } from './types'
+import {
+  PAYMENT_STATUS_META,
+  RESERVATION_STATUS_META,
+  formatDateFr,
+  formatHourLabel,
+  formatPrice,
+  type Admin,
+  type Facility,
+  type Stats,
+} from './types'
 
 export function OverviewSection({
   stats,
@@ -60,8 +70,15 @@ export function OverviewSection({
     {
       title: 'Revenus estimés',
       value: formatPrice(stats?.estimatedRevenue ?? 0),
+      icon: CircleDollarSign,
+      hint: `${stats?.unpaidReservations ?? 0} en attente de paiement`,
+      action: onGoToReservations,
+    },
+    {
+      title: 'Encaissé (payé)',
+      value: formatPrice(stats?.paidRevenue ?? 0),
       icon: Wallet,
-      hint: 'réservations confirmées',
+      hint: 'paiements Wave & sur place reçus',
       action: onGoToReservations,
     },
     {
@@ -104,7 +121,7 @@ export function OverviewSection({
       </div>
 
       {/* Cartes de statistiques */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {cards.map((c) => (
           <Card key={c.title} className="overflow-hidden group cursor-pointer" onClick={c.action}>
             <CardContent className="p-4">
@@ -204,6 +221,10 @@ export function OverviewSection({
                 <ul className="divide-y">
                   {(stats?.upcoming ?? []).slice(0, 6).map((r) => {
                     const meta = RESERVATION_STATUS_META[r.status] ?? { label: r.status, variant: 'outline' as const }
+                    const payMeta = PAYMENT_STATUS_META[r.paymentStatus] ?? {
+                      label: r.paymentStatus,
+                      variant: 'outline' as const,
+                    }
                     return (
                       <li key={r.id} className="flex items-center gap-3 px-4 py-3">
                         <div className="flex size-10 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary text-xs font-bold leading-none">
@@ -213,10 +234,21 @@ export function OverviewSection({
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{r.customerName}</p>
                           <p className="text-xs text-muted-foreground truncate">
-                            {r.facility?.name ?? '—'} · {formatDateFr(r.date)}
+                            {r.facility?.name ?? '—'} · {formatDateFr(r.date)} · {r.startTime}–
+                            {formatHourLabel(r.endTime)}
                           </p>
                         </div>
-                        <Badge variant={meta.variant}>{meta.label}</Badge>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <Badge variant={meta.variant}>{meta.label}</Badge>
+                          {r.paymentMethod ? (
+                            <Badge
+                              variant={payMeta.variant}
+                              className="px-1.5 py-0 text-[10px] leading-4"
+                            >
+                              {payMeta.label}
+                            </Badge>
+                          ) : null}
+                        </div>
                       </li>
                     )
                   })}

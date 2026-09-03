@@ -1,17 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import {
   BadgeCheck,
   CalendarCheck,
-  CheckCircle2,
   Clock,
   Flame,
   GraduationCap,
   Heart,
-  Loader2,
   Mail,
   MapPin,
   Phone,
@@ -20,262 +18,15 @@ import {
   Target,
   Trophy,
   Users,
+  Waves,
   Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { useToast } from '@/hooks/use-toast'
-import { apiFetch, ApiError } from './api'
 import { formatPrice, type Facility } from './types'
 import { Brand } from './brand'
-
-type BookingForm = {
-  facilityId: string
-  date: string
-  startTime: string
-  endTime: string
-  customerName: string
-  customerEmail: string
-  customerPhone: string
-  notes: string
-}
-
-function todayIso(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-export function BookingDialog({
-  open,
-  onOpenChange,
-  facilities,
-  preselectedFacilityId,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  facilities: Facility[]
-  preselectedFacilityId?: string
-}) {
-  const { toast } = useToast()
-  const [submitting, setSubmitting] = useState(false)
-  const [form, setForm] = useState<BookingForm>({
-    facilityId: preselectedFacilityId ?? '',
-    date: todayIso(),
-    startTime: '18:00',
-    endTime: '19:00',
-    customerName: '',
-    customerEmail: '',
-    customerPhone: '',
-    notes: '',
-  })
-
-  const selected = facilities.find((f) => f.id === form.facilityId)
-  const set = (patch: Partial<BookingForm>) => setForm((prev) => ({ ...prev, ...patch }))
-
-  // À chaque ouverture, applique le terrain préselectionné (ou réinitialise)
-  useEffect(() => {
-    if (open) {
-      setForm((prev) => ({ ...prev, facilityId: preselectedFacilityId ?? '' }))
-    }
-  }, [open, preselectedFacilityId])
-
-  const canSubmit =
-    form.facilityId &&
-    form.date &&
-    form.startTime &&
-    form.endTime &&
-    form.customerName.trim().length > 1 &&
-    form.endTime > form.startTime
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!canSubmit || submitting) return
-    setSubmitting(true)
-    try {
-      const result = await apiFetch<{ reservation: { reference: string } }>('/api/reservations', {
-        method: 'POST',
-        body: {
-          facilityId: form.facilityId,
-          date: form.date,
-          startTime: form.startTime,
-          endTime: form.endTime,
-          customerName: form.customerName.trim(),
-          customerEmail: form.customerEmail.trim() || null,
-          customerPhone: form.customerPhone.trim() || null,
-          notes: form.notes.trim() || null,
-          source: 'PUBLIC',
-        },
-      })
-      toast({
-        title: 'Réservation envoyée ! 🎉',
-        description: `Référence ${result.reservation.reference}. Vous recevrez une confirmation sous 24 h.`,
-      })
-      onOpenChange(false)
-      setForm((prev) => ({ ...prev, customerName: '', customerEmail: '', customerPhone: '', notes: '' }))
-    } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Une erreur est survenue. Réessayez.'
-      toast({ title: 'Échec de la réservation', description: message, variant: 'destructive' })
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg zalspor-scroll max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <CalendarCheck className="size-5 text-primary" />
-            Réserver un terrain
-          </DialogTitle>
-          <DialogDescription>
-            Choisissez votre terrain de football, votre créneau horaire et laissez vos coordonnées.
-            Confirmation sous 24 h.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="booking-facility">Terrain *</Label>
-            <Select value={form.facilityId} onValueChange={(v) => set({ facilityId: v })}>
-              <SelectTrigger id="booking-facility">
-                <SelectValue placeholder="Sélectionnez un terrain" />
-              </SelectTrigger>
-              <SelectContent>
-                {facilities.map((f) => (
-                  <SelectItem key={f.id} value={f.id}>
-                    {f.name} — {formatPrice(f.pricePerHour)}/h
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div className="grid gap-2">
-              <Label htmlFor="booking-date">Date *</Label>
-              <Input
-                id="booking-date"
-                type="date"
-                min={todayIso()}
-                value={form.date}
-                onChange={(e) => set({ date: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="booking-start">Début *</Label>
-              <Input
-                id="booking-start"
-                type="time"
-                value={form.startTime}
-                onChange={(e) => set({ startTime: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="booking-end">Fin *</Label>
-              <Input
-                id="booking-end"
-                type="time"
-                value={form.endTime}
-                onChange={(e) => set({ endTime: e.target.value })}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="booking-name">Nom complet *</Label>
-            <Input
-              id="booking-name"
-              placeholder="Ex. Aïssatou Diallo"
-              value={form.customerName}
-              onChange={(e) => set({ customerName: e.target.value })}
-              required
-              minLength={2}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <Label htmlFor="booking-email">E-mail</Label>
-              <Input
-                id="booking-email"
-                type="email"
-                placeholder="vous@exemple.com"
-                value={form.customerEmail}
-                onChange={(e) => set({ customerEmail: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="booking-phone">Téléphone</Label>
-              <Input
-                id="booking-phone"
-                placeholder="+221 77 000 00 00"
-                value={form.customerPhone}
-                onChange={(e) => set({ customerPhone: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="booking-notes">Notes (optionnel)</Label>
-            <Textarea
-              id="booking-notes"
-              placeholder="Précisions, équipement souhaité…"
-              rows={2}
-              value={form.notes}
-              onChange={(e) => set({ notes: e.target.value })}
-            />
-          </div>
-
-          {selected && (
-            <div className="rounded-lg bg-muted/60 border px-4 py-3 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground flex items-center gap-2">
-                <Clock className="size-4" />
-                Tarif : <strong className="text-foreground">{formatPrice(selected.pricePerHour)}/heure</strong>
-              </span>
-              <span className="text-muted-foreground flex items-center gap-1.5">
-                <Users className="size-4" />
-                {selected.capacity} joueurs
-              </span>
-            </div>
-          )}
-
-          <DialogFooter className="mt-1">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
-            </Button>
-            <Button type="submit" disabled={!canSubmit || submitting}>
-              {submitting ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-              {submitting ? 'Envoi…' : 'Confirmer la réservation'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
+import { BookingDialog } from './booking-dialog'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 24 },
@@ -325,14 +76,14 @@ export function Landing({
       {/* ===== Header ===== */}
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
+          <div className="flex h-24 items-center justify-between">
             <button
               type="button"
               onClick={() => goTo('accueil')}
               className="flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label="Zalfoot, retour à l’accueil"
             >
-              <Brand size={40} />
+              <Brand size={80} />
             </button>
 
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
@@ -441,7 +192,7 @@ export function Landing({
                     <dl className="grid grid-cols-3 gap-4 pt-6 mt-2 border-t">
                       {[
                         { k: String(facilities.length || 3), v: 'Terrains de football' },
-                        { k: '7j/7', v: 'De 6 h à 23 h' },
+                        { k: '7j/7', v: 'De 8 h à minuit' },
                         { k: '98%', v: 'Joueurs satisfaits' },
                       ].map((s) => (
                         <div key={s.v} className="flex flex-col">
@@ -495,7 +246,7 @@ export function Landing({
                     <h2 className="text-3xl font-extrabold tracking-tight">Nos terrains de football</h2>
                     <p className="text-muted-foreground mt-2 max-w-2xl">
                       Pelouses entretenues quotidiennement, buts avec filets, vestiaires et éclairage
-                      nocturne. Ouverts de 6 h à 23 h, 7 jours sur 7.
+                      nocturne. Ouverts de 8 h à minuit, 7 jours sur 7.
                     </p>
                   </div>
                   <Badge variant="outline" className="w-fit gap-1.5">
@@ -560,9 +311,9 @@ export function Landing({
                 </p>
                 <div className="grid gap-6 sm:grid-cols-3 mt-10">
                   {[
-                    { n: '1', icon: CalendarCheck, t: 'Choisissez votre créneau', d: 'Sélectionnez le terrain, la date et l’heure de votre match.' },
-                    { n: '2', icon: CheckCircle2, t: 'Confirmez votre demande', d: 'Laissez vos coordonnées : notre équipe valide sous 24 heures.' },
-                    { n: '3', icon: Trophy, t: 'Jouez !', d: 'Présentez votre référence à l’accueil et profitez de votre heure de foot.' },
+                    { n: '1', icon: CalendarCheck, t: 'Choisissez votre créneau', d: 'Calendrier visible : sélectionnez la date et l’heure (08:00 → minuit) parmi les créneaux libres.' },
+                    { n: '2', icon: Waves, t: 'Payez avec Wave', d: 'Laissez votre nom et votre numéro de téléphone, puis réglez directement via Wave Business.' },
+                    { n: '3', icon: Trophy, t: 'Jouez !', d: 'Votre créneau est bloqué : présentez votre référence à l’accueil et profitez de votre heure de foot.' },
                   ].map((step) => (
                     <Card key={step.n} className="relative overflow-hidden">
                       <span className="absolute -top-3 -right-1 text-7xl font-black text-primary/5 select-none">
@@ -921,8 +672,8 @@ export function Landing({
       {/* ===== Footer (sticky) ===== */}
       <footer className="mt-auto border-t bg-muted/40">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2.5">
-            <Brand size={28} />
+          <div className="flex items-center gap-3">
+            <Brand size={56} />
             <span>© {new Date().getFullYear()}</span>
           </div>
           <nav className="flex items-center gap-4">

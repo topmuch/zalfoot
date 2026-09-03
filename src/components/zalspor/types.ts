@@ -21,8 +21,11 @@ export type Reservation = {
   facility: Facility | null
   date: string
   startTime: string
-  endTime: string
+  endTime: string // "00:00" = minuit
   status: string // PENDING | CONFIRMED | CANCELLED
+  amount: number | null // montant FCFA (durée × tarif)
+  paymentStatus: string // UNPAID | PAID
+  paymentMethod: string | null // WAVE | ON_SITE
   notes: string | null
   source: string // PUBLIC | ADMIN
   createdAt: string
@@ -60,9 +63,38 @@ export type Stats = {
   activeFacilities: number
   totalEvents: number
   estimatedRevenue: number
+  paidRevenue: number
+  unpaidReservations: number
   daily: { date: string; count: number }[]
   statusBreakdown: { status: string; count: number }[]
   upcoming: Reservation[]
+}
+
+/** Réglages publics (paiement Wave…) */
+export type PublicSettings = {
+  wavePaymentLink: string | null
+}
+
+/** Disponibilité d'un jour : créneaux 08:00 → 00:00 */
+export type AvailabilitySlot = {
+  start: string
+  end: string
+  state: 'FREE' | 'BOOKED' | 'PAST' | 'CLOSED'
+}
+
+export type DayAvailability = {
+  facilityId: string
+  date: string
+  open: { start: string; end: string }
+  pricePerHour: number
+  slots: AvailabilitySlot[]
+}
+
+export type MonthAvailability = {
+  facilityId: string
+  month: string
+  totalSlotsPerDay: number
+  days: Record<string, number>
 }
 
 export const FACILITY_TYPE_LABELS: Record<string, string> = {
@@ -81,6 +113,16 @@ export const RESERVATION_STATUS_META: Record<string, { label: string; variant: '
   PENDING: { label: 'En attente', variant: 'secondary' },
   CONFIRMED: { label: 'Confirmée', variant: 'default' },
   CANCELLED: { label: 'Annulée', variant: 'destructive' },
+}
+
+export const PAYMENT_STATUS_META: Record<string, { label: string; variant: 'default' | 'outline' }> = {
+  UNPAID: { label: 'Impayé', variant: 'outline' },
+  PAID: { label: 'Payé', variant: 'default' },
+}
+
+export const PAYMENT_METHOD_META: Record<string, string> = {
+  WAVE: 'Wave',
+  ON_SITE: 'Sur place',
 }
 
 export function formatPrice(amount: number): string {
@@ -110,4 +152,20 @@ export function formatDateTimeFr(iso: string): string {
     month: 'short',
     year: 'numeric',
   })
+}
+
+/** Libellé lisible d'une heure : 00:00 → « minuit » */
+export function formatHourLabel(time: string): string {
+  return time === '00:00' ? 'minuit' : time
+}
+
+/** Construit l'URL de paiement Wave à partir du lien configuré. */
+export function buildWaveUrl(
+  link: string,
+  params: { amount?: number; reference?: string } = {},
+): string {
+  let url = link
+  if (params.amount !== undefined) url = url.replaceAll('{amount}', String(Math.round(params.amount)))
+  if (params.reference) url = url.replaceAll('{reference}', params.reference)
+  return url
 }
