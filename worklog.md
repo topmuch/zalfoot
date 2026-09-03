@@ -61,3 +61,21 @@ Stage Summary:
 - ✅ Golden path complet vérifié dans le navigateur : les 3 fonctionnalités demandées (Ajouter réservation, Ajouter événement calendrier, Créer admin) fonctionnent réellement.
 - App prête : prévisualisation via le panneau de droite (bouton « Open in New Tab »).
 
+---
+Task ID: 4
+Agent: main (Z.ai Code)
+Task: Générer un terrain de football et l'intégrer dans le hero de la page d'accueil.
+
+Work Log:
+- Skill image-generation chargé ; génération via script SDK (scripts/generate-hero-football.ts) car la CLI bloque 1536x768 alors que l'API exige des multiples de 32.
+- Image « terrain de football » générée en 1536x768 (ratio 2:1 exact pour le conteneur aspect-[2/1] du hero) → public/hero-football.png (188 Ko).
+- Prompt : pelouse verte rayée, lignes blanches, buts avec filets, projecteurs, heure dorée, perspective aérienne légère, photoréaliste, sans texte.
+- landing.tsx : src de l'Image du hero remplacé (/hero-sports.png → /hero-football.png) + alt mis à jour.
+- Vérification VLM de l'image brute : vrai terrain de football, aucun texte, aucun artefact, qualité pro.
+- agent-browser : page / chargée, aucune erreur console/page ; captures desktop + mobile (375x812) analysées par VLM → hero bien cadré, pas de déformation ni débordement, carte stats en overlay intacte.
+- Lint : 0 erreur ; dev.log : GET / 200 et /api/facilities 200, aucune erreur runtime.
+
+Stage Summary:
+- ✅ Hero de la page d'accueil : image de terrain de football générée par IA et intégrée (desktop + mobile vérifiés).
+- Ancienne image gymnase conservée en secours dans public/hero-sports.png.
+

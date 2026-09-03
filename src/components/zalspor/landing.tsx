@@ -421,8 +421,8 @@ export function Landing({
               >
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 aspect-[2/1]">
                   <Image
-                    src="/hero-sports.png"
-                    alt="Intérieur moderne du complexe sportif Zalspor avec grand gymnase multifonctions"
+                    src="/hero-football.png"
+                    alt="Terrain de football du complexe sportif Zalspor, pelouse verte balisée avec buts et projecteurs"
                     fill
                     priority
                     sizes="(max-width: 1024px) 100vw, 50vw"
