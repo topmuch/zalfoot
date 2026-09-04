@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import {
@@ -92,6 +92,24 @@ export function Landing({
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
+
+  /**
+   * Deep-link #reserver : le QR code imprimé (affiches, flyers) pointe sur
+   * {SITE_URL}/#reserver → on ouvre directement la page de réservation.
+   * Le hash est ensuite nettoyé pour ne pas re-déclencher au retour à l'accueil.
+   */
+  useEffect(() => {
+    const applyBookingHash = () => {
+      const hash = window.location.hash.replace('#', '').toLowerCase()
+      if (hash === 'reserver' || hash === 'reservation') {
+        openBooking()
+        window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      }
+    }
+    applyBookingHash()
+    window.addEventListener('hashchange', applyBookingHash)
+    return () => window.removeEventListener('hashchange', applyBookingHash)
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -381,15 +399,29 @@ export function Landing({
                     <div>
                       <h2 className="text-2xl sm:text-3xl font-extrabold">Prêt à jouer ce week-end ?</h2>
                       <p className="mt-2 text-primary-foreground/85 max-w-lg">
-                        Réservez votre heure de foot en ligne maintenant, ou appelez-nous 7 j/7 de
-                        8 h à 1 h du matin.
+                        Scannez le QR code pour réserver votre heure de foot en ligne,
+                        ou appelez-nous 7 j/7 de 8 h à 1 h du matin.
                       </p>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                      <Button size="lg" variant="secondary" className="h-12" onClick={() => openBooking()}>
-                        <CalendarCheck className="size-5" />
-                        Réserver maintenant
-                      </Button>
+                    <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                      {/* QR code → page de réservation (cliquable aussi sur ordinateur) */}
+                      <button
+                        type="button"
+                        onClick={() => openBooking()}
+                        className="group flex flex-col items-center gap-1.5 rounded-2xl bg-white p-3 shadow-lg transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground cursor-pointer"
+                        aria-label="Réserver en ligne — scanner le QR code ou cliquer"
+                      >
+                        <Image
+                          src="/qr-reservation.png"
+                          alt="QR code menant à la page de réservation Zalfoot"
+                          width={140}
+                          height={140}
+                          className="size-[124px] sm:size-[140px] rounded-md"
+                        />
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-700 leading-none">
+                          Scannez pour réserver
+                        </span>
+                      </button>
                       <a
                         href={CONTACT.phoneHref}
                         className="inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-primary-foreground/30 bg-primary-foreground/10 px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/20 cursor-pointer"
